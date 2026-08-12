@@ -5,6 +5,9 @@ export default {
   providers: [Google({ allowDangerousEmailAccountLinking: true })],
   pages: { signIn: "/login" },
   callbacks: {
+    authorized({ auth }) {
+      return !!auth?.user;
+    },
     jwt({ token, user }) {
       if (user) token.id = user.id;
       return token;

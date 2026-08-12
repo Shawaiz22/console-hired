@@ -24,6 +24,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user?.passwordHash) return null;
 
+        // Gate on emailVerified: allowDangerousEmailAccountLinking (auth.config.ts) is only
+        // safe if an unverified credentials account can't claim an email before its real owner
+        // signs in with Google. Remove only once PR 3's registration flow sets emailVerified.
+        if (!user.emailVerified) return null;
+
         const valid = await bcrypt.compare(creds.password as string, user.passwordHash);
         return valid ? user : null;
       },
