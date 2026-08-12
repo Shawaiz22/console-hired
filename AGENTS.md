@@ -18,11 +18,19 @@ This document defines the mandatory workflow rules, architectural standards, fil
   - `fix/<fix-description>` for bug fixes (e.g. `fix/pdf-extractor-timeout`)
   - `refactor/<scope>` for code refactoring
   - `chore/<tooling>` for dependency updates or dev tooling setup
-- **Commit Messages**: Use clean, descriptive commit messages that clearly explain _what_ changed and _why_ (e.g. `feat(auth): setup NextAuth session provider with Prisma adapter`, `fix(ui): adjust dashboard responsive sidebar breakpoint`).
+- **Commit Messages**: Use clean, descriptive commit messages that clearly explain _what_ changed and _why_ (e.g. `feat(auth): setup NextAuth session provider with Drizzle adapter`, `fix(ui): adjust dashboard responsive sidebar breakpoint`).
 
 ---
 
 ## 🏗️ ARCHITECTURE & MODULE STRUCTURE
+
+### Tech Stack & Core Services
+
+- **Framework**: Next.js App Router (React 19, TypeScript).
+- **Styling & UI**: Tailwind CSS v4 + shadcn/ui components + Lucide Icons.
+- **Database & ORM**: **Neon PostgreSQL** + **Drizzle ORM** (with native `pgvector` helper support for embeddings).
+- **Authentication**: **NextAuth.js (Auth.js v5)** with `@auth/drizzle-adapter`.
+- **Testing**: **Jest** + **React Testing Library (`@testing-library/react` & `@testing-library/jest-dom`)**.
 
 ### Feature-Based Module Organization (`modules/`)
 
@@ -72,11 +80,11 @@ src/
    - Limit file upload size to 5MB max on both client and server.
    - Reject empty or corrupt file inputs gracefully.
 3. **Database & API Security**:
-   - Use Prisma ORM parameterized queries to prevent SQL injection.
+   - Use Drizzle ORM parameterized queries to prevent SQL injection.
    - Protect all private endpoints `/api/v1/*` and routes `/dashboard/*` via server-side NextAuth middleware.
    - Never expose API keys or secrets in client-side code; isolate all AI calls to server routes.
-4. **Human-Grade Code Quality**:
-   - Code structure, naming, comments, and documentation must read like clean, natural, human engineering. Avoid generic AI boilerplate, excessive repetitive comments, or dummy implementations.
+4. **Code Quality**:
+   - Code structure, naming, comments, and documentation must read like clean. Avoid generic AI boilerplate, excessive repetitive comments, or dummy implementations.
 
 ---
 
