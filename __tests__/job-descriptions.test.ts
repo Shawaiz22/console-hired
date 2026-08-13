@@ -8,6 +8,10 @@ jest.mock("@/lib/auth-helpers", () => ({
   requireUser: jest.fn().mockResolvedValue({ id: "user-123", email: "test@example.com" }),
 }));
 
+jest.mock("@/modules/resume/utils/parse-jd", () => ({
+  parseJD: jest.fn().mockResolvedValue(undefined),
+}));
+
 describe("Job Descriptions API Suite", () => {
   it("returns 400 when rawText is under 100 characters", async () => {
     const req = new Request("http://localhost/api/v1/job-descriptions", {
