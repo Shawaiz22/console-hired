@@ -27,14 +27,25 @@ export async function POST(req: Request) {
     const existing = await db.query.users.findFirst({
       where: eq(users.email, email),
     });
-    if (existing) {
+
+    if (existing?.passwordHash) {
       return NextResponse.json(
-        { error: "An account with this email already exists" },
+        { error: "An account with this email already exists. Try logging in." },
         { status: 409 }
       );
     }
 
     const passwordHash = await bcrypt.hash(password, 10);
+
+    if (existing) {
+      const [user] = await db
+        .update(users)
+        .set({ passwordHash })
+        .where(eq(users.id, existing.id))
+        .returning({ id: users.id, email: users.email });
+
+      return NextResponse.json({ user }, { status: 200 });
+    }
 
     const [user] = await db
       .insert(users)
