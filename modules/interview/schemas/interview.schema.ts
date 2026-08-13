@@ -33,7 +33,13 @@ export const SessionSummarySchema = z.object({
   focusAreas: z.array(z.string()),
 });
 
+export const StartInterviewSchema = z.object({
+  resumeId: z.string().uuid("Please select a valid resume"),
+  jobDescriptionId: z.string().uuid("Please select a valid job description"),
+});
+
 export type QuestionType = z.infer<typeof QuestionTypeSchema>;
 export type InterviewQuestion = z.infer<typeof InterviewQuestionSchema>;
 export type AnswerEvaluation = z.infer<typeof AnswerEvaluationSchema>;
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;
+export type StartInterviewValues = z.infer<typeof StartInterviewSchema>;

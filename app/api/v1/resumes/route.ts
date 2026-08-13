@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { resumes } from "@/lib/db/schema";
@@ -8,6 +9,20 @@ import { parseResume } from "@/modules/resume/utils/parse-resume";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
+
+export async function GET() {
+  const user = await requireUser();
+  if (!user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userResumes = await db.query.resumes.findMany({
+    where: eq(resumes.userId, user.id),
+    orderBy: (resumesTable, { desc }) => [desc(resumesTable.createdAt)],
+  });
+
+  return NextResponse.json({ resumes: userResumes });
+}
 
 export async function POST(req: Request) {
   const user = await requireUser();

@@ -1,5 +1,6 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
@@ -16,8 +17,25 @@ const JDInputSchema = z.object({
   company: z.string().optional(),
 });
 
+export async function GET() {
+  const user = await requireUser();
+  if (!user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userJDs = await db.query.jobDescriptions.findMany({
+    where: eq(jobDescriptions.userId, user.id),
+    orderBy: (jdsTable, { desc }) => [desc(jdsTable.createdAt)],
+  });
+
+  return NextResponse.json({ jobDescriptions: userJDs });
+}
+
 export async function POST(req: Request) {
   const user = await requireUser();
+  if (!user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const contentType = req.headers.get("content-type") || "";
 
