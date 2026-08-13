@@ -10,6 +10,7 @@ import { ParsedResumeSchema } from "@/modules/resume/schemas/resume.schema";
 import { matchSkills } from "./skills";
 import { evaluateExperienceFit } from "./experience";
 import { mapEvidence } from "./evidence";
+import { analyzeATSCompatibilityFromItems, ATSReport } from "./ats";
 
 const SuggestionsAndGapsSchema = z.object({
   gaps: z.array(GapSchema),
@@ -129,8 +130,17 @@ export async function runAnalysis(analysisId: string): Promise<void> {
         .where(eq(jobDescriptions.id, jd.id));
     }
 
-    // 3.4 ATS Hygiene (10% weight - hardcoded 100 until ATS checker)
-    const atsHygiene = 100;
+    // 3.4 ATS Hygiene (10% weight from ATS checker)
+    let atsReport = resume.atsReport as ATSReport | null;
+    if (!atsReport) {
+      atsReport = analyzeATSCompatibilityFromItems([], 1, resume.rawText);
+      await db
+        .update(resumes)
+        .set({ atsReport })
+        .where(eq(resumes.id, resume.id))
+        .catch(console.warn);
+    }
+    const atsHygiene = atsReport?.score ?? 100;
 
     // 4. LLM Generation for Gap Explanations and Bullet Suggestions
     let gaps: Gap[] = [];
