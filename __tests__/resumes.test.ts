@@ -2,12 +2,14 @@
  * @jest-environment node
  */
 
-process.env.DATABASE_URL = process.env.DATABASE_URL || "postgresql://mock:mock@localhost:5432/mock";
-
 import { POST as uploadResumeHandler } from "@/app/api/v1/resumes/route";
 
 jest.mock("@/lib/auth-helpers", () => ({
   requireUser: jest.fn().mockResolvedValue({ id: "user-123", email: "test@example.com" }),
+}));
+
+jest.mock("@/modules/resume/utils/parse-resume", () => ({
+  parseResume: jest.fn().mockResolvedValue(undefined),
 }));
 
 describe("Resume Upload API Suite", () => {
