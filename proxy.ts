@@ -1,8 +1,8 @@
 import NextAuth from "next-auth";
 import authConfig from "./auth.config";
 
-export const { auth: middleware } = NextAuth(authConfig);
-export default middleware;
+export const { auth: proxy } = NextAuth(authConfig);
+export default proxy;
 
 export const config = {
   matcher: ["/dashboard/:path*"],
