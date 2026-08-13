@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { jobDescriptions } from "@/lib/db/schema";
 import { extractText, ExtractionError } from "@/modules/resume/utils/extract";
+import { parseJD } from "@/modules/resume/utils/parse-jd";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
         company: jobDescriptions.company,
       });
 
-    // parseJD(jobDescription.id).catch(console.error); // background — A2-5
+    parseJD(jobDescription.id).catch(console.error);
 
     return NextResponse.json({ jobDescription }, { status: 201 });
   } catch (err) {
