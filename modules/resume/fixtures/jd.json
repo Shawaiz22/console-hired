@@ -1,0 +1,25 @@
+{
+  "title": "Senior Frontend Engineer",
+  "company": "Apex Cloud Systems",
+  "seniority": "senior",
+  "minYears": 3,
+  "maxYears": 5,
+  "requiredSkills": [
+    "React",
+    "TypeScript",
+    "Next.js",
+    "Tailwind CSS",
+    "Jest",
+    "CI/CD",
+    "Kubernetes",
+    "Docker"
+  ],
+  "niceToHaveSkills": ["GraphQL", "Node.js", "AWS"],
+  "responsibilities": [
+    "Build responsive React interfaces using modern state management and component libraries",
+    "Experience with CI/CD pipelines and automated continuous testing frameworks",
+    "Kubernetes deployment experience and containerized application orchestration",
+    "Architect reusable frontend architectures and maintain design systems across platforms",
+    "Optimize client-side performance, web vitals, and accessibility compliance"
+  ]
+}
