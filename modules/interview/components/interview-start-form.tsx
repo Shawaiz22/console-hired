@@ -2,9 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { StartInterviewSchema, type StartInterviewValues } from "../schemas/interview.schema";
 
 interface Option {
   id: string;
@@ -15,11 +25,16 @@ export function InterviewStartForm() {
   const router = useRouter();
   const [resumes, setResumes] = useState<Option[]>([]);
   const [jds, setJds] = useState<Option[]>([]);
-  const [selectedResumeId, setSelectedResumeId] = useState("");
-  const [selectedJdId, setSelectedJdId] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const form = useForm<StartInterviewValues>({
+    resolver: zodResolver(StartInterviewSchema),
+    defaultValues: {
+      resumeId: "",
+      jobDescriptionId: "",
+    },
+  });
 
   useEffect(() => {
     async function loadOptions() {
@@ -50,49 +65,42 @@ export function InterviewStartForm() {
 
         setResumes(resumeOpts);
         setJds(jdOpts);
-        if (resumeOpts.length > 0) setSelectedResumeId(resumeOpts[0].id);
-        if (jdOpts.length > 0) setSelectedJdId(jdOpts[0].id);
+
+        if (resumeOpts.length > 0 && jdOpts.length > 0) {
+          form.reset({
+            resumeId: resumeOpts[0].id,
+            jobDescriptionId: jdOpts[0].id,
+          });
+        }
         setLoading(false);
       } catch {
-        setError("Could not load your resumes and job descriptions.");
+        setServerError("Could not load your resumes and job descriptions.");
         setLoading(false);
       }
     }
 
     loadOptions();
-  }, []);
+  }, [form]);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedResumeId || !selectedJdId) {
-      setError("Please select both a resume and a job description.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setError(null);
+  async function onSubmit(values: StartInterviewValues) {
+    setServerError(null);
 
     try {
       const res = await fetch("/api/v1/interviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          resumeId: selectedResumeId,
-          jobDescriptionId: selectedJdId,
-        }),
+        body: JSON.stringify(values),
       });
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Failed to start interview session");
-        setIsSubmitting(false);
+        setServerError(data.error || "Failed to start interview session");
         return;
       }
 
       router.push(`/dashboard/interview/${data.session.id}`);
     } catch {
-      setError("An error occurred while creating session.");
-      setIsSubmitting(false);
+      setServerError("An error occurred while creating session.");
     }
   }
 
@@ -115,63 +123,79 @@ export function InterviewStartForm() {
         </p>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FieldGroup>
-            <Field>
+            <Field data-invalid={!!form.formState.errors.resumeId}>
               <FieldLabel htmlFor="resumeSelect">Select Resume</FieldLabel>
               {resumes.length === 0 ? (
                 <p className="text-xs italic text-muted-foreground">
                   No resumes found. Please upload one in the Analyze section first.
                 </p>
               ) : (
-                <select
-                  id="resumeSelect"
-                  value={selectedResumeId}
-                  onChange={(e) => setSelectedResumeId(e.target.value)}
-                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden"
-                >
-                  {resumes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  name="resumeId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="resumeSelect" className="w-full">
+                        <SelectValue placeholder="Select a resume" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {resumes.map((r) => (
+                          <SelectItem key={r.id} value={r.id}>
+                            {r.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               )}
+              <FieldError errors={[form.formState.errors.resumeId]} />
             </Field>
 
-            <Field>
+            <Field data-invalid={!!form.formState.errors.jobDescriptionId}>
               <FieldLabel htmlFor="jdSelect">Select Job Description</FieldLabel>
               {jds.length === 0 ? (
                 <p className="text-xs italic text-muted-foreground">
                   No job descriptions found. Please create one in Analyze first.
                 </p>
               ) : (
-                <select
-                  id="jdSelect"
-                  value={selectedJdId}
-                  onChange={(e) => setSelectedJdId(e.target.value)}
-                  className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden"
-                >
-                  {jds.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      {j.label}
-                    </option>
-                  ))}
-                </select>
+                <Controller
+                  name="jobDescriptionId"
+                  control={form.control}
+                  render={({ field }) => (
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger id="jdSelect" className="w-full">
+                        <SelectValue placeholder="Select a job description" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {jds.map((j) => (
+                          <SelectItem key={j.id} value={j.id}>
+                            {j.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               )}
+              <FieldError errors={[form.formState.errors.jobDescriptionId]} />
             </Field>
           </FieldGroup>
 
-          {error && (
-            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>
+          {serverError && (
+            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+              {serverError}
+            </div>
           )}
 
           <Button
             type="submit"
             className="w-full"
-            disabled={isSubmitting || resumes.length === 0 || jds.length === 0}
+            disabled={form.formState.isSubmitting || resumes.length === 0 || jds.length === 0}
           >
-            {isSubmitting ? "Generating Questions..." : "Start Practice Session"}
+            {form.formState.isSubmitting ? "Generating Questions..." : "Start Practice Session"}
           </Button>
         </form>
       </CardContent>

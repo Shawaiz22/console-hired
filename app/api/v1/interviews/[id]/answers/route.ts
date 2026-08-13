@@ -11,7 +11,7 @@ type Params = Promise<{ id: string }>;
 
 const AnswerInputSchema = z.object({
   questionIndex: z.number().min(0).max(5),
-  answerText: z.string().min(10),
+  answerText: z.string().min(50, "Answer must be at least 50 characters for AI evaluation"),
 });
 
 export async function POST(req: Request, { params }: { params: Params }) {
@@ -58,8 +58,8 @@ export async function POST(req: Request, { params }: { params: Params }) {
         inputMode: "text",
         evaluation: templateEval,
       });
-    } catch {
-      // Ignore DB duplicate key error during dev retries
+    } catch (dbErr) {
+      console.error("[post-answer] DB insert error:", dbErr);
     }
 
     return NextResponse.json({

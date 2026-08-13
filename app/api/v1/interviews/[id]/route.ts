@@ -23,14 +23,16 @@ export async function GET(_req: Request, { params }: { params: Params }) {
     });
 
     if (!session) {
-      // Fixture fallback for demo / test IDs
-      return NextResponse.json({
-        session: {
-          ...fixtureSession,
-          id,
-        },
-        answers: fixtureSession.answers,
-      });
+      if (id.startsWith("demo") || id === "demo") {
+        return NextResponse.json({
+          session: {
+            ...fixtureSession,
+            id,
+          },
+          answers: fixtureSession.answers,
+        });
+      }
+      return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
     }
 
     const answers = await db.query.interviewAnswers.findMany({

@@ -42,8 +42,8 @@ export async function POST(_req: Request, { params }: { params: Params }) {
         updatedAt: new Date(),
       })
       .where(eq(interviewSessions.id, id));
-  } catch {
-    // Ignore if session ID was fixture demo
+  } catch (err) {
+    console.error("[complete-interview] DB update error:", err);
   }
 
   return NextResponse.json({
