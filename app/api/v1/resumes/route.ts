@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { resumes } from "@/lib/db/schema";
 import { extractText, ExtractionError } from "@/modules/resume/utils/extract";
+import { parseResume } from "@/modules/resume/utils/parse-resume";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
       })
       .returning({ id: resumes.id, fileName: resumes.fileName });
 
-    // parseResume(resume.id).catch(console.error); // background — A2-4
+    parseResume(resume.id).catch(console.error);
 
     return NextResponse.json({ resume }, { status: 201 });
   } catch (err) {
