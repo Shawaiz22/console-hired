@@ -1,4 +1,8 @@
+import crypto from "crypto";
 import nodemailer from "nodemailer";
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { emailVerificationCodes } from "@/lib/db/schema";
 
 const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -49,4 +53,25 @@ export function otpEmailTemplate(code: string) {
   </table>
 </body>
 </html>`;
+}
+
+export async function createAndSendOtp(email: string) {
+  await db.delete(emailVerificationCodes).where(eq(emailVerificationCodes.email, email));
+
+  const code = String(crypto.randomInt(100000, 1000000));
+  const codeHash = crypto.createHash("sha256").update(code).digest("hex");
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+  await db.insert(emailVerificationCodes).values({
+    email,
+    codeHash,
+    expiresAt,
+    attempts: 0,
+  });
+
+  await sendEmail({
+    to: email,
+    subject: "Your console.hired() Verification Code",
+    html: otpEmailTemplate(code),
+  });
 }

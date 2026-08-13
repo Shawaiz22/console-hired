@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
+import { createAndSendOtp } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
         .where(eq(users.id, existing.id))
         .returning({ id: users.id, email: users.email });
 
-      return NextResponse.json({ user }, { status: 200 });
+      return NextResponse.json({ user, requiresVerification: false }, { status: 200 });
     }
 
     const [user] = await db
@@ -52,7 +53,13 @@ export async function POST(req: Request) {
       .values({ name, email, passwordHash })
       .returning({ id: users.id, email: users.email });
 
-    return NextResponse.json({ user }, { status: 201 });
+    try {
+      await createAndSendOtp(email);
+    } catch (otpErr) {
+      console.error("[register] Failed to send OTP email:", otpErr);
+    }
+
+    return NextResponse.json({ user, requiresVerification: true }, { status: 201 });
   } catch (err) {
     console.error("[register]", err);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
