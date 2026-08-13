@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
+import { generateObject } from "ai";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
+import { extractionModel } from "@/lib/ai";
 import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
-import { interviewSessions } from "@/lib/db/schema";
+import { interviewSessions, jobDescriptions, resumes } from "@/lib/db/schema";
 import fixtureSession from "@/modules/interview/fixtures/interview.json";
+import { InterviewQuestionSchema } from "@/modules/interview/schemas/interview.schema";
 
 export const runtime = "nodejs";
 
@@ -27,6 +31,41 @@ export async function POST(req: Request) {
 
     const { resumeId, jobDescriptionId } = parsed.data;
 
+    // Strict ownership check for both resume and job description
+    const resume = await db.query.resumes.findFirst({
+      where: and(eq(resumes.id, resumeId), eq(resumes.userId, user.id)),
+    });
+
+    const jd = await db.query.jobDescriptions.findFirst({
+      where: and(eq(jobDescriptions.id, jobDescriptionId), eq(jobDescriptions.userId, user.id)),
+    });
+
+    if (!resume || !jd) {
+      return NextResponse.json({ error: "Resume or Job Description not found" }, { status: 404 });
+    }
+
+    let questions = fixtureSession.questions;
+
+    try {
+      const { object } = await generateObject({
+        model: extractionModel,
+        schema: z.object({ questions: z.array(InterviewQuestionSchema).length(6) }),
+        prompt: `Generate 6 interview questions for this candidate and role — 4 technical, 2 behavioral.
+Ground every question in something specific from the resume or job description.
+Reference actual technologies and responsibilities, not generic topics.
+Fill whyAsked with a one-line reason a real interviewer would ask it.
+
+Resume: ${JSON.stringify(resume.parsed || resume.rawText)}
+Job Description: ${JSON.stringify(jd.parsed || jd.rawText)}`,
+      });
+
+      if (object.questions && object.questions.length === 6) {
+        questions = object.questions;
+      }
+    } catch (aiErr) {
+      console.warn("[interview-ai-generation-fallback]", aiErr);
+    }
+
     const [session] = await db
       .insert(interviewSessions)
       .values({
@@ -34,9 +73,9 @@ export async function POST(req: Request) {
         resumeId,
         jobDescriptionId,
         status: "in_progress",
-        questions: fixtureSession.questions,
+        questions,
       })
-      .returning({ id: interviewSessions.id });
+      .returning({ id: interviewSessions.id, questions: interviewSessions.questions });
 
     return NextResponse.json({ session }, { status: 201 });
   } catch (err) {

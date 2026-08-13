@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { interviewAnswers, interviewSessions } from "@/lib/db/schema";
@@ -18,19 +18,20 @@ export async function GET(_req: Request, { params }: { params: Params }) {
   const { id } = await params;
 
   try {
+    // Strict ownership check: filter userId in query
     const session = await db.query.interviewSessions.findFirst({
-      where: eq(interviewSessions.id, id),
+      where: and(eq(interviewSessions.id, id), eq(interviewSessions.userId, user.id)),
     });
 
     if (!session) {
-      // Fixture fallback for demo / test IDs
-      return NextResponse.json({
-        session: {
-          ...fixtureSession,
-          id,
-        },
-        answers: fixtureSession.answers,
-      });
+      // Allow fallback if testing fixture ID, otherwise return 404
+      if (id === fixtureSession.id) {
+        return NextResponse.json({
+          session: fixtureSession,
+          answers: fixtureSession.answers,
+        });
+      }
+      return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
     }
 
     const answers = await db.query.interviewAnswers.findMany({
