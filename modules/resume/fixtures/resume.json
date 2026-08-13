@@ -1,0 +1,57 @@
+{
+  "name": "Alex Mercer",
+  "email": "alex.mercer@example.com",
+  "yearsOfExperience": 3.5,
+  "skills": [
+    { "name": "React", "category": "framework" },
+    { "name": "TypeScript", "category": "language" },
+    { "name": "JavaScript", "category": "language" },
+    { "name": "Next.js", "category": "framework" },
+    { "name": "Tailwind CSS", "category": "tool" },
+    { "name": "Redux", "category": "framework" },
+    { "name": "Jest", "category": "tool" },
+    { "name": "Git", "category": "tool" },
+    { "name": "REST APIs", "category": "domain" },
+    { "name": "GraphQL", "category": "domain" },
+    { "name": "Node.js", "category": "framework" }
+  ],
+  "experience": [
+    {
+      "company": "TechCorp Innovations",
+      "role": "Frontend Developer",
+      "startDate": "2022-06",
+      "endDate": null,
+      "bullets": [
+        "Built a design-system component library used across 4 core web products using React, TypeScript, and Tailwind CSS",
+        "Optimized client-side rendering pipeline, improving Lighthouse performance score from 64 to 92",
+        "Set up GitHub Actions for automated testing and continuous integration with Jest and Playwright",
+        "Collaborated with backend engineers to integrate RESTful API endpoints and GraphQL query interfaces"
+      ]
+    },
+    {
+      "company": "WebSphere Solutions",
+      "role": "Junior Web Developer",
+      "startDate": "2021-01",
+      "endDate": "2022-05",
+      "bullets": [
+        "Developed responsive web interfaces using React and Redux State Management",
+        "Implemented secure user authentication flows and session handling",
+        "Refactored legacy JavaScript codebase into modern modular TypeScript"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "State University of Technology",
+      "degree": "B.S. in Computer Science",
+      "year": 2020
+    }
+  ],
+  "projects": [
+    {
+      "name": "DevPulse Dashboard",
+      "description": "Real-time developer productivity analytics dashboard built with Next.js App Router and Tailwind CSS.",
+      "tech": ["Next.js", "TypeScript", "Tailwind CSS", "Recharts"]
+    }
+  ]
+}

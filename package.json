@@ -26,10 +26,13 @@
     ]
   },
   "dependencies": {
+    "@ai-sdk/google": "^4.0.43",
+    "@ai-sdk/groq": "^4.0.28",
     "@auth/drizzle-adapter": "^1.11.3",
     "@base-ui/react": "^1.7.0",
     "@hookform/resolvers": "^5.7.1",
     "@neondatabase/serverless": "^1.1.0",
+    "ai": "^7.0.64",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

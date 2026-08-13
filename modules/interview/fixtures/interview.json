@@ -1,0 +1,93 @@
+{
+  "id": "e8b7d912-3a45-4f6c-81b9-123456789abc",
+  "status": "in_progress",
+  "questions": [
+    {
+      "id": "q1",
+      "question": "In your experience at TechCorp Innovations, how did you design and build the component library to ensure scalability across 4 products?",
+      "type": "technical",
+      "targetSkill": "React",
+      "whyAsked": "Assesses your modular design thinking and component architecture experience."
+    },
+    {
+      "id": "q2",
+      "question": "Describe a situation where a client-side performance bottleneck impacted users, and how you diagnosed and resolved it.",
+      "type": "technical",
+      "targetSkill": "Performance Optimization",
+      "whyAsked": "Evaluates your analytical problem-solving skills and mastery of Web Vitals metrics."
+    },
+    {
+      "id": "q3",
+      "question": "Tell me about a time when you had a disagreement with a backend engineer regarding API payload design or GraphQL schemas. How did you handle it?",
+      "type": "behavioral",
+      "targetSkill": "Collaboration",
+      "whyAsked": "Tests cross-functional communication, negotiation, and conflict resolution capabilities."
+    },
+    {
+      "id": "q4",
+      "question": "How do you enforce type safety across large React/Next.js projects using TypeScript, and what strategies do you use for complex generic state?",
+      "type": "technical",
+      "targetSkill": "TypeScript",
+      "whyAsked": "Verifies deep understanding of TypeScript patterns in production codebases."
+    },
+    {
+      "id": "q5",
+      "question": "Can you share an instance where a release failed in CI/CD pipeline automated testing? What steps did you take to restore build stability?",
+      "type": "behavioral",
+      "targetSkill": "CI/CD & Reliability",
+      "whyAsked": "Checks resilience under pressure and commitment to engineering quality standards."
+    },
+    {
+      "id": "q6",
+      "question": "Though your resume doesn't explicitly list Kubernetes, how do you approach learning and integrating new infrastructure tools like Docker into your workflow?",
+      "type": "behavioral",
+      "targetSkill": "Adaptability",
+      "whyAsked": "Gauges learning agility and willingness to expand into DevOps/cloud areas."
+    }
+  ],
+  "answers": [
+    {
+      "questionIndex": 0,
+      "answerText": "When creating the component library at TechCorp, I established atomic design principles. I used TypeScript for strict prop interface definitions and Tailwind CSS with standard design tokens for styling consistency. Each component had isolated Storybook documentation and automated unit tests with Jest. This allowed four separate project teams to adopt the components without breaking changes.",
+      "inputMode": "text",
+      "evaluation": {
+        "clarity": 5,
+        "relevance": 5,
+        "completeness": 4,
+        "specificity": 4,
+        "star": null,
+        "strengths": [
+          "Clear architectural framework reference (atomic design)",
+          "Explicit technology choices explained with business context"
+        ],
+        "improvements": [
+          "Could mention how versioning and npm distribution were managed across teams"
+        ]
+      }
+    },
+    {
+      "questionIndex": 1,
+      "answerText": "We noticed our dashboard initial load time was over 4 seconds, causing high drop-off. I profiled the application using Chrome DevTools Performance tab and Lighthouse, identifying unnecessary re-renders in a complex table component and massive initial JavaScript bundle size. I implemented route-based code splitting, dynamic imports, and memoized expensive calculation hooks. This reduced our bundle size by 45% and improved our Lighthouse score from 64 to 92.",
+      "inputMode": "text",
+      "evaluation": {
+        "clarity": 5,
+        "relevance": 5,
+        "completeness": 5,
+        "specificity": 5,
+        "star": {
+          "situation": "Initial dashboard load time was over 4 seconds with high user drop-off.",
+          "task": "Diagnose performance bottlenecks and optimize application Web Vitals.",
+          "action": "Profiled performance, implemented code-splitting, dynamic imports, and memoization hooks.",
+          "result": "Reduced bundle size by 45% and boosted Lighthouse score from 64 to 92."
+        },
+        "strengths": [
+          "Flawless STAR structure with quantified metrics before and after",
+          "Demonstrates technical depth in profiling tools and optimization techniques"
+        ],
+        "improvements": [
+          "Mention whether real-user monitoring (RUM) was set up to track long-term trends"
+        ]
+      }
+    }
+  ]
+}

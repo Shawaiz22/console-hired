@@ -1,0 +1,70 @@
+{
+  "overallScore": 68,
+  "breakdown": {
+    "skillCoverage": 70,
+    "experienceFit": 85,
+    "responsibilityEvidence": 60,
+    "atsHygiene": 100
+  },
+  "evidenceMap": [
+    {
+      "requirement": "Build responsive React interfaces using modern state management and component libraries",
+      "matchedBullet": "Built a design-system component library used across 4 core web products using React, TypeScript, and Tailwind CSS",
+      "similarity": 0.88,
+      "status": "strong"
+    },
+    {
+      "requirement": "Experience with CI/CD pipelines and automated continuous testing frameworks",
+      "matchedBullet": "Set up GitHub Actions for automated testing and continuous integration with Jest and Playwright",
+      "similarity": 0.65,
+      "status": "partial"
+    },
+    {
+      "requirement": "Architect reusable frontend architectures and maintain design systems across platforms",
+      "matchedBullet": "Built a design-system component library used across 4 core web products using React, TypeScript, and Tailwind CSS",
+      "similarity": 0.76,
+      "status": "strong"
+    },
+    {
+      "requirement": "Optimize client-side performance, web vitals, and accessibility compliance",
+      "matchedBullet": "Optimized client-side rendering pipeline, improving Lighthouse performance score from 64 to 92",
+      "similarity": 0.82,
+      "status": "strong"
+    },
+    {
+      "requirement": "Kubernetes deployment experience and containerized application orchestration",
+      "matchedBullet": null,
+      "similarity": 0.22,
+      "status": "missing"
+    }
+  ],
+  "gaps": [
+    {
+      "skill": "Kubernetes",
+      "required": true,
+      "reason": "No mention of Kubernetes or container orchestration experience found in your resume."
+    },
+    {
+      "skill": "Docker",
+      "required": true,
+      "reason": "Docker tooling experience is requested in the job requirements but absent from your profile."
+    },
+    {
+      "skill": "AWS",
+      "required": false,
+      "reason": "Cloud provider infrastructure experience (AWS) is listed as a nice-to-have skill."
+    }
+  ],
+  "suggestions": [
+    {
+      "original": "Set up GitHub Actions for automated testing and continuous integration with Jest and Playwright",
+      "improved": "Engineered GitHub Actions CI/CD workflows for automated unit & E2E testing with Jest and Playwright, cutting deployment cycle times by 40%",
+      "rationale": "Quantify impact and explicitly highlight CI/CD workflow automation."
+    },
+    {
+      "original": null,
+      "improved": "Containerized local frontend applications using Docker and experimented with deployment configurations",
+      "rationale": "Add a project bullet demonstrating familiarity with containerization basics if applicable."
+    }
+  ]
+}
