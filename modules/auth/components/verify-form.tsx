@@ -3,15 +3,27 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+
+const verifySchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  code: z
+    .string()
+    .length(6, "Verification code must be exactly 6 digits")
+    .regex(/^\d+$/, "Verification code must contain digits only"),
+});
+
+type VerifyValues = z.infer<typeof verifySchema>;
 
 export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
   const router = useRouter();
-  const [email, setEmail] = useState(initialEmail || "");
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [isExhausted, setIsExhausted] = useState(false);
@@ -19,6 +31,20 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
   const [resendMessage, setResendMessage] = useState("");
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const form = useForm<VerifyValues>({
+    resolver: zodResolver(verifySchema),
+    defaultValues: {
+      email: initialEmail || "",
+      code: "",
+    },
+  });
+
+  const emailValue = useWatch({
+    control: form.control,
+    name: "email",
+    defaultValue: initialEmail || "",
+  });
 
   // 60-second cooldown timer
   useEffect(() => {
@@ -28,6 +54,12 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
     }, 1000);
     return () => clearInterval(timer);
   }, [cooldown]);
+
+  function syncDigitsToForm(newDigits: string[]) {
+    setDigits(newDigits);
+    const code = newDigits.join("");
+    form.setValue("code", code, { shouldValidate: true });
+  }
 
   function handleDigitChange(index: number, value: string) {
     if (isExhausted) return;
@@ -39,7 +71,7 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
 
     const newDigits = [...digits];
     newDigits[index] = lastChar;
-    setDigits(newDigits);
+    syncDigitsToForm(newDigits);
 
     if (lastChar && index < 5) {
       inputRefs.current[index + 1]?.focus();
@@ -66,7 +98,7 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       newDigits[i] = digit;
     });
 
-    setDigits(newDigits);
+    syncDigitsToForm(newDigits);
     setServerError("");
 
     const focusIndex = Math.min(pastedDigits.length, 5);
@@ -74,7 +106,7 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
   }
 
   async function handleResend() {
-    if (cooldown > 0 || !email) return;
+    if (cooldown > 0 || !emailValue) return;
     setServerError("");
     setResendMessage("");
 
@@ -82,12 +114,13 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       const res = await fetch("/api/v1/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: emailValue }),
       });
 
       const data = await res.json();
       if (!res.ok) {
         setServerError(data.error || "Failed to resend code");
+        toast.error(data.error || "Failed to resend code");
         if (data.retryAfter) {
           setCooldown(data.retryAfter);
         }
@@ -95,29 +128,22 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       }
 
       setIsExhausted(false);
-      setDigits(["", "", "", "", "", ""]);
+      const resetDigits = ["", "", "", "", "", ""];
+      setDigits(resetDigits);
+      form.setValue("code", "");
       setAttemptsRemaining(null);
       setCooldown(60);
-      setResendMessage("A new verification code has been sent to your email.");
+      const successMsg = "A new verification code has been sent to your email.";
+      setResendMessage(successMsg);
+      toast.success("New verification code sent!");
     } catch {
-      setServerError("Could not resend code. Please try again.");
+      const errMsg = "Could not resend code. Please try again.";
+      setServerError(errMsg);
+      toast.error(errMsg);
     }
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const code = digits.join("");
-    if (code.length < 6) {
-      setServerError("Please enter all 6 digits.");
-      return;
-    }
-
-    if (!email) {
-      setServerError("Please enter your email address.");
-      return;
-    }
-
-    setIsSubmitting(true);
+  async function onSubmit(values: VerifyValues) {
     setServerError("");
     setResendMessage("");
 
@@ -125,7 +151,7 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       const res = await fetch("/api/v1/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email: values.email, code: values.code }),
       });
 
       const data = await res.json();
@@ -145,14 +171,16 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
           setIsExhausted(true);
         }
         setServerError(data.error || "Verification failed");
-        setIsSubmitting(false);
+        toast.error(data.error || "Verification failed");
         return;
       }
 
+      toast.success("Email verified successfully! You can now log in.");
       router.push("/login?verified=true");
     } catch {
-      setServerError("Verification request failed. Please try again.");
-      setIsSubmitting(false);
+      const errMsg = "Verification request failed. Please try again.";
+      setServerError(errMsg);
+      toast.error(errMsg);
     }
   }
 
@@ -161,9 +189,9 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       <div className="text-center">
         <h1 className="text-xl font-semibold tracking-tight">Verify your email</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {email ? (
+          {emailValue ? (
             <>
-              We sent a 6-digit code to <strong className="text-foreground">{email}</strong>
+              We sent a 6-digit code to <strong className="text-foreground">{emailValue}</strong>
             </>
           ) : (
             "Enter your email and the 6-digit code sent to you."
@@ -171,30 +199,34 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
         {!initialEmail && (
-          <Field>
+          <Field data-invalid={!!form.formState.errors.email}>
             <FieldLabel htmlFor="email">Email Address</FieldLabel>
             <Input
               id="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              required
+              aria-required="true"
+              aria-invalid={!!form.formState.errors.email}
+              {...form.register("email")}
             />
+            <FieldError errors={[form.formState.errors.email]} />
           </Field>
         )}
 
         {isExhausted ? (
-          <div className="rounded-md bg-destructive/15 p-4 text-center text-sm text-destructive">
+          <div
+            role="alert"
+            className="rounded-md bg-destructive/15 p-4 text-center text-sm text-destructive"
+          >
             Code expired or maximum attempts reached. Please request a new code.
           </div>
         ) : (
           <FieldGroup>
-            <Field>
-              <FieldLabel>Verification Code</FieldLabel>
-              <div className="flex justify-between gap-2">
+            <Field data-invalid={!!form.formState.errors.code}>
+              <FieldLabel id="otp-label">Verification Code</FieldLabel>
+              <div role="group" aria-labelledby="otp-label" className="flex justify-between gap-2">
                 {digits.map((digit, idx) => (
                   <Input
                     key={idx}
@@ -205,6 +237,8 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
                     inputMode="numeric"
                     maxLength={1}
                     value={digit}
+                    aria-label={`Digit ${idx + 1} of 6`}
+                    aria-required="true"
                     onChange={(e) => handleDigitChange(idx, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(idx, e)}
                     onPaste={idx === 0 ? handlePaste : undefined}
@@ -212,12 +246,13 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
                   />
                 ))}
               </div>
+              <FieldError errors={[form.formState.errors.code]} />
             </Field>
           </FieldGroup>
         )}
 
         {serverError && (
-          <div className="text-center text-sm text-destructive">
+          <div role="alert" className="text-center text-sm text-destructive">
             {serverError}
             {attemptsRemaining !== null && attemptsRemaining > 0 && (
               <span className="mt-1 block text-xs">
@@ -228,19 +263,21 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
         )}
 
         {resendMessage && (
-          <div className="text-center text-sm text-emerald-600 dark:text-emerald-400">
+          <div role="status" className="text-center text-sm text-emerald-600 dark:text-emerald-400">
             {resendMessage}
           </div>
         )}
 
         {!isExhausted && (
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isSubmitting || digits.join("").length < 6}
-          >
-            {isSubmitting ? "Verifying..." : "Verify Code"}
-          </Button>
+          <Field>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={form.formState.isSubmitting || digits.join("").length < 6}
+            >
+              {form.formState.isSubmitting ? "Verifying..." : "Verify Code"}
+            </Button>
+          </Field>
         )}
       </form>
 
