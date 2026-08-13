@@ -1,44 +1,62 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { and, eq } from "drizzle-orm";
 import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
-import { analyses } from "@/lib/db/schema";
+import { analyses, jobDescriptions, resumes } from "@/lib/db/schema";
+import { runAnalysis } from "@/modules/analysis/utils/run-analysis";
 
 export const runtime = "nodejs";
 
 const CreateAnalysisSchema = z.object({
-  resumeId: z.string().uuid(),
-  jobDescriptionId: z.string().uuid(),
+  resumeId: z.string().uuid("Invalid resumeId format"),
+  jobDescriptionId: z.string().uuid("Invalid jobDescriptionId format"),
 });
 
 export async function POST(req: Request) {
   const user = await requireUser();
-  if (!user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
+  let body: unknown;
   try {
-    const body = await req.json();
-    const parsed = CreateAnalysisSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
-    }
-
-    const { resumeId, jobDescriptionId } = parsed.data;
-
-    const [analysis] = await db
-      .insert(analyses)
-      .values({
-        userId: user.id,
-        resumeId,
-        jobDescriptionId,
-        status: "pending",
-      })
-      .returning({ id: analyses.id });
-
-    return NextResponse.json({ analysis }, { status: 201 });
-  } catch (err) {
-    console.error("[create-analysis]", err);
-    return NextResponse.json({ error: "Could not create analysis" }, { status: 500 });
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON payload" }, { status: 400 });
   }
+
+  const parsed = CreateAnalysisSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+  }
+
+  const { resumeId, jobDescriptionId } = parsed.data;
+
+  // Ownership: scope in the query, never check after fetch
+  const resume = await db.query.resumes.findFirst({
+    where: and(eq(resumes.id, resumeId), eq(resumes.userId, user.id)),
+  });
+  if (!resume) {
+    return NextResponse.json({ error: "Resume not found" }, { status: 404 });
+  }
+
+  const jd = await db.query.jobDescriptions.findFirst({
+    where: and(eq(jobDescriptions.id, jobDescriptionId), eq(jobDescriptions.userId, user.id)),
+  });
+  if (!jd) {
+    return NextResponse.json({ error: "Job description not found" }, { status: 404 });
+  }
+
+  const [analysis] = await db
+    .insert(analyses)
+    .values({
+      userId: user.id,
+      resumeId,
+      jobDescriptionId,
+      status: "pending",
+    })
+    .returning({ id: analyses.id });
+
+  // Fire-and-forget background processing
+  runAnalysis(analysis.id).catch(console.error);
+
+  return NextResponse.json({ id: analysis.id }, { status: 202 });
 }
