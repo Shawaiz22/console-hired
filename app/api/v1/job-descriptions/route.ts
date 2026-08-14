@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { jobDescriptions } from "@/lib/db/schema";
+import { MAX_UPLOAD_BYTES } from "@/modules/resume/schemas/resume.schema";
 import { extractText, ExtractionError } from "@/modules/resume/utils/extract";
 import { parseJD } from "@/modules/resume/utils/parse-jd";
 
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
         }
         rawText = formText;
       } else {
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > MAX_UPLOAD_BYTES) {
           return NextResponse.json({ error: "File must be under 5MB" }, { status: 400 });
         }
         rawText = await extractText(file);

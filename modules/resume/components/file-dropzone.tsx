@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AlertCircle, FileText, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { MAX_UPLOAD_BYTES, isAcceptedUpload } from "../schemas/resume.schema";
 
 interface FileDropzoneProps {
   onFileSelect: (file: File | null) => void;
@@ -24,16 +25,13 @@ export function FileDropzone({
   function validateAndSelect(file: File) {
     setClientError(null);
 
-    const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
-    const isDocx = file.name.endsWith(".docx");
-
-    if (!isPdf && !isDocx) {
+    if (!isAcceptedUpload(file)) {
       setClientError("Only PDF and DOCX files are supported.");
       onFileSelect(null);
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > MAX_UPLOAD_BYTES) {
       setClientError("File must be under 5MB");
       onFileSelect(null);
       return;

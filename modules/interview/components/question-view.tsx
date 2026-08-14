@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm, useWatch } from "react-hook-form";
 import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Field, FieldError } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import { type InterviewQuestion } from "../schemas/interview.schema";
+import {
+  AnswerFormSchema,
+  MIN_ANSWER_LENGTH,
+  type AnswerFormValues,
+  type InterviewQuestion,
+} from "../schemas/interview.schema";
 
 interface QuestionViewProps {
   question: InterviewQuestion;
@@ -23,26 +31,27 @@ export function QuestionView({
   onSubmitAnswer,
   isSubmitting,
 }: QuestionViewProps) {
-  const [answerText, setAnswerText] = useState("");
   const [showWhyAsked, setShowWhyAsked] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const isTechnical = question.type === "technical";
   const progressPercent = Math.round(((questionIndex + 1) / totalQuestions) * 100);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
+  const form = useForm<AnswerFormValues>({
+    resolver: zodResolver(AnswerFormSchema),
+    defaultValues: { answerText: "" },
+  });
 
-    if (answerText.trim().length < 50) {
-      setError("Answer should be at least 50 characters for effective AI feedback.");
-      return;
-    }
-
-    await onSubmitAnswer(answerText.trim());
-  }
+  const answerText = useWatch({
+    control: form.control,
+    name: "answerText",
+    defaultValue: "",
+  });
 
   const charCount = answerText.trim().length;
+
+  async function onSubmit(values: AnswerFormValues) {
+    await onSubmitAnswer(values.answerText);
+  }
 
   return (
     <Card className="mx-auto max-w-2xl">
@@ -100,30 +109,35 @@ export function QuestionView({
         </div>
 
         {/* Response Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-1.5">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
+          <Field className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="answer" className="text-xs font-semibold text-foreground">
+              <label htmlFor="answerText" className="text-xs font-semibold text-foreground">
                 Your Answer
               </label>
-              <span className="text-xs text-muted-foreground">{charCount} / 50 min chars</span>
+              <span className="text-xs text-muted-foreground">
+                {charCount} / {MIN_ANSWER_LENGTH} min chars
+              </span>
             </div>
             <textarea
-              id="answer"
+              id="answerText"
               rows={6}
-              value={answerText}
-              onChange={(e) => setAnswerText(e.target.value)}
+              {...form.register("answerText")}
               placeholder="Type your response here. Include specific details, metrics, and technologies..."
               disabled={isSubmitting}
-              className="flex min-h-[140px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+              aria-invalid={Boolean(form.formState.errors.answerText)}
+              className="flex min-h-35 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
             />
-          </div>
+            {form.formState.errors.answerText && (
+              <FieldError>{form.formState.errors.answerText.message}</FieldError>
+            )}
+          </Field>
 
-          {error && (
-            <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>
-          )}
-
-          <Button type="submit" className="w-full" disabled={isSubmitting || charCount < 50}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting || charCount < MIN_ANSWER_LENGTH}
+          >
             {isSubmitting ? "Evaluating Answer..." : "Submit Answer & View Feedback"}
           </Button>
         </form>

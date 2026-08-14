@@ -3,11 +3,13 @@ import { generateObject } from "ai";
 import { and, eq } from "drizzle-orm";
 import { extractionModel } from "@/lib/ai";
 import { requireApiUser } from "@/lib/auth-helpers";
+import { isUuid } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { interviewAnswers, interviewSessions } from "@/lib/db/schema";
 import {
   SessionSummarySchema,
   type AnswerEvaluation,
+  type SessionSummary,
 } from "@/modules/interview/schemas/interview.schema";
 
 export const runtime = "nodejs";
@@ -22,13 +24,17 @@ export async function POST(_req: Request, { params }: { params: Params }) {
 
   const { id } = await params;
 
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Invalid session ID" }, { status: 400 });
+  }
+
   try {
     // Ownership check
     const session = await db.query.interviewSessions.findFirst({
       where: and(eq(interviewSessions.id, id), eq(interviewSessions.userId, user.id)),
     });
 
-    if (!session && id !== "e8b7d912-3a45-4f6c-81b9-123456789abc") {
+    if (!session) {
       return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
     }
 
@@ -36,39 +42,31 @@ export async function POST(_req: Request, { params }: { params: Params }) {
       where: eq(interviewAnswers.sessionId, id),
     });
 
-    // Calculate overallScore from average dimension scores scaled to 100
-    let overallScore = 84;
+    // Score comes from the stored per-answer evaluations, so an unanswered
+    // session has nothing to score rather than a default to fall back on.
+    let totalDimSum = 0;
+    let totalDims = 0;
 
-    if (answers.length > 0) {
-      let totalDimSum = 0;
-      let totalDims = 0;
-
-      answers.forEach((ans) => {
-        const ev = ans.evaluation as AnswerEvaluation | null;
-        if (ev) {
-          totalDimSum += ev.clarity + ev.relevance + ev.completeness + ev.specificity;
-          totalDims += 4;
-        }
-      });
-
-      if (totalDims > 0) {
-        overallScore = Math.round((totalDimSum / (totalDims * 5)) * 100);
+    for (const ans of answers) {
+      const ev = ans.evaluation as AnswerEvaluation | null;
+      if (ev) {
+        totalDimSum += ev.clarity + ev.relevance + ev.completeness + ev.specificity;
+        totalDims += 4;
       }
     }
 
-    let summary = {
-      overallImpression:
-        "Demonstrated strong technical knowledge and solid problem-solving structure across all questions.",
-      topStrengths: [
-        "Excellent modular design principles in React/TypeScript",
-        "Clear STAR framework structure in behavioral responses",
-        "Proactive performance profiling and metrics tracking",
-      ],
-      focusAreas: [
-        "Quantify impact with more explicit business metrics in technical answers",
-        "Mention CI/CD deployment automation strategies upfront",
-      ],
-    };
+    if (totalDims === 0) {
+      return NextResponse.json(
+        { error: "Answer at least one question before completing this session" },
+        { status: 400 }
+      );
+    }
+
+    const overallScore = Math.round((totalDimSum / (totalDims * 5)) * 100);
+
+    // The summary is AI-generated or absent — it is never invented locally, so a
+    // failed call completes the session with a real score and a null summary.
+    let summary: SessionSummary | null = null;
 
     try {
       const { object: aiSummary } = await generateObject({
@@ -80,24 +78,20 @@ Provide an overallImpression, 3 topStrengths, and 2-3 focusAreas for improvement
 Questions & Answers: ${JSON.stringify(answers)}`,
       });
 
-      if (aiSummary) {
-        summary = aiSummary;
-      }
+      summary = aiSummary;
     } catch (aiErr) {
-      console.warn("[interview-summary-ai-generation-fallback]", aiErr);
+      console.warn("[interview-summary-ai-generation-failed]", aiErr);
     }
 
-    if (session) {
-      await db
-        .update(interviewSessions)
-        .set({
-          status: "completed",
-          overallScore,
-          summary,
-          updatedAt: new Date(),
-        })
-        .where(eq(interviewSessions.id, id));
-    }
+    await db
+      .update(interviewSessions)
+      .set({
+        status: "completed",
+        overallScore,
+        summary,
+        updatedAt: new Date(),
+      })
+      .where(eq(interviewSessions.id, id));
 
     return NextResponse.json({
       session: {

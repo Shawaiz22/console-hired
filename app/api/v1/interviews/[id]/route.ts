@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { requireApiUser } from "@/lib/auth-helpers";
+import { isUuid } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { interviewAnswers, interviewSessions } from "@/lib/db/schema";
-import fixtureSession from "@/modules/interview/fixtures/interview.json";
 
 export const runtime = "nodejs";
 
@@ -17,6 +17,10 @@ export async function GET(_req: Request, { params }: { params: Params }) {
 
   const { id } = await params;
 
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Invalid session ID" }, { status: 400 });
+  }
+
   try {
     // Ownership: scope in the query so another user's session reads as 404
     const session = await db.query.interviewSessions.findFirst({
@@ -24,15 +28,6 @@ export async function GET(_req: Request, { params }: { params: Params }) {
     });
 
     if (!session) {
-      if (id.startsWith("demo") || id === "demo" || id === fixtureSession.id) {
-        return NextResponse.json({
-          session: {
-            ...fixtureSession,
-            id,
-          },
-          answers: fixtureSession.answers,
-        });
-      }
       return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
     }
 

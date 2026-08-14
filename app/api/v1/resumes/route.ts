@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { resumes } from "@/lib/db/schema";
+import { MAX_UPLOAD_BYTES } from "@/modules/resume/schemas/resume.schema";
 import { extractText, ExtractionError } from "@/modules/resume/utils/extract";
 import { parseResume } from "@/modules/resume/utils/parse-resume";
 
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  if (file.size > 5 * 1024 * 1024) {
+  if (file.size > MAX_UPLOAD_BYTES) {
     return NextResponse.json({ error: "File must be under 5MB" }, { status: 400 });
   }
 

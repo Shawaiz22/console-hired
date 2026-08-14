@@ -6,7 +6,6 @@ import { extractionModel } from "@/lib/ai";
 import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { interviewSessions, jobDescriptions, resumes } from "@/lib/db/schema";
-import fixtureSession from "@/modules/interview/fixtures/interview.json";
 import { InterviewQuestionSchema } from "@/modules/interview/schemas/interview.schema";
 
 export const runtime = "nodejs";
@@ -44,7 +43,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Resume or Job Description not found" }, { status: 404 });
     }
 
-    let questions = fixtureSession.questions;
+    // Questions must be grounded in this user's resume and JD, so a failed
+    // generation is surfaced rather than silently swapped for canned questions.
+    let questions;
 
     try {
       const { object } = await generateObject({
@@ -59,11 +60,13 @@ Resume: ${JSON.stringify(resume.parsed || resume.rawText)}
 Job Description: ${JSON.stringify(jd.parsed || jd.rawText)}`,
       });
 
-      if (object.questions && object.questions.length === 6) {
-        questions = object.questions;
-      }
+      questions = object.questions;
     } catch (aiErr) {
-      console.warn("[interview-ai-generation-fallback]", aiErr);
+      console.error("[interview-question-generation-failed]", aiErr);
+      return NextResponse.json(
+        { error: "Could not generate interview questions right now. Please try again." },
+        { status: 503 }
+      );
     }
 
     const [session] = await db

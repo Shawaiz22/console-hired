@@ -38,3 +38,20 @@ export const ParsedResumeSchema = z.object({
 });
 
 export type ParsedResume = z.infer<typeof ParsedResumeSchema>;
+
+/** Upload limits shared by the dropzone, the upload form and the API routes. */
+export const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+export const ACCEPTED_UPLOAD_EXTENSIONS = [".pdf", ".docx"] as const;
+
+export function isAcceptedUpload(file: File) {
+  return ACCEPTED_UPLOAD_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext));
+}
+
+export const ResumeUploadSchema = z.object({
+  file: z
+    .instanceof(File, { message: "Please select a resume file" })
+    .refine((file) => isAcceptedUpload(file), "Only PDF and DOCX files are supported")
+    .refine((file) => file.size <= MAX_UPLOAD_BYTES, "File must be under 5MB"),
+});
+
+export type ResumeUploadValues = z.infer<typeof ResumeUploadSchema>;

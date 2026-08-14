@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { requireApiUser } from "@/lib/auth-helpers";
+import { isUuid } from "@/lib/validation";
 import { db } from "@/lib/db";
 import { analyses } from "@/lib/db/schema";
 
@@ -14,8 +15,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const { id } = await params;
 
-  if (!id) {
-    return NextResponse.json({ error: "Missing analysis ID" }, { status: 400 });
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: "Invalid analysis ID" }, { status: 400 });
   }
 
   // Ownership: Scope query with both id AND userId.

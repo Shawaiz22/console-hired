@@ -38,8 +38,27 @@ export const StartInterviewSchema = z.object({
   jobDescriptionId: z.string().uuid("Please select a valid job description"),
 });
 
+export const MIN_ANSWER_LENGTH = 50;
+
+/** Shared by the answer form and POST /api/v1/interviews/[id]/answers. */
+export const AnswerInputSchema = z.object({
+  questionIndex: z.number().int().min(0).max(5),
+  answerText: z
+    .string()
+    .trim()
+    .min(
+      MIN_ANSWER_LENGTH,
+      `Answer must be at least ${MIN_ANSWER_LENGTH} characters for AI evaluation`
+    ),
+});
+
+/** The form only owns the answer text; questionIndex comes from session state. */
+export const AnswerFormSchema = AnswerInputSchema.pick({ answerText: true });
+
 export type QuestionType = z.infer<typeof QuestionTypeSchema>;
 export type InterviewQuestion = z.infer<typeof InterviewQuestionSchema>;
 export type AnswerEvaluation = z.infer<typeof AnswerEvaluationSchema>;
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;
 export type StartInterviewValues = z.infer<typeof StartInterviewSchema>;
+export type AnswerInput = z.infer<typeof AnswerInputSchema>;
+export type AnswerFormValues = z.infer<typeof AnswerFormSchema>;
