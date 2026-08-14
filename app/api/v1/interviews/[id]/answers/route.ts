@@ -50,7 +50,7 @@ export async function POST(req: Request, { params }: { params: Params }) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const { questionIndex, answerText } = parsed.data;
+  const { questionIndex, answerText, inputMode } = parsed.data;
 
   const targetQuestion = (session.questions as InterviewQuestion[] | null)?.[questionIndex];
   if (!targetQuestion) {
@@ -83,7 +83,7 @@ export async function POST(req: Request, { params }: { params: Params }) {
       sessionId,
       questionIndex,
       answerText,
-      inputMode: "text",
+      inputMode: inputMode || "text",
       evaluation,
     });
   } catch (dbErr) {
@@ -95,6 +95,7 @@ export async function POST(req: Request, { params }: { params: Params }) {
     answer: {
       questionIndex,
       answerText,
+      inputMode: inputMode || "text",
       evaluation,
     },
   });

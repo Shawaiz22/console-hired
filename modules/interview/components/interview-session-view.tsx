@@ -5,6 +5,7 @@ import { VideoAnalysis } from "@/components/interview/video-analysis";
 import { FeedbackCard } from "./feedback-card";
 import { QuestionView } from "./question-view";
 import { SessionSummaryView } from "./session-summary";
+import { stopSpeaking } from "../utils/speak";
 import {
   type AnswerEvaluation,
   type InterviewQuestion,
@@ -33,6 +34,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   const [session, setSession] = useState<SessionData | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [activeEvaluation, setActiveEvaluation] = useState<AnswerEvaluation | null>(null);
+  const [activeInputMode, setActiveInputMode] = useState<"text" | "voice">("text");
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +76,8 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   }, [id]);
 
   const handleAnswerSubmit = useCallback(
-    async (answerText: string) => {
+    async (answerText: string, inputMode: "text" | "voice" = "text") => {
+      stopSpeaking();
       setIsSubmitting(true);
       setError(null);
 
@@ -82,7 +85,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
         const res = await fetch(`/api/v1/interviews/${id}/answers`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ questionIndex: currentQuestionIndex, answerText }),
+          body: JSON.stringify({ questionIndex: currentQuestionIndex, answerText, inputMode }),
         });
 
         const data = await res.json();
@@ -93,6 +96,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
         }
 
         setActiveEvaluation(data.answer.evaluation as AnswerEvaluation);
+        setActiveInputMode(data.answer.inputMode || inputMode);
       } catch {
         setError("An error occurred while evaluating your answer.");
       } finally {
@@ -103,6 +107,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   );
 
   const handleNextQuestion = useCallback(async () => {
+    stopSpeaking();
     setActiveEvaluation(null);
 
     const questionCount = session?.questions.length ?? 0;
@@ -185,9 +190,11 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
               evaluation={activeEvaluation}
               onNextQuestion={handleNextQuestion}
               isLastQuestion={currentQuestionIndex === session.questions.length - 1}
+              inputMode={activeInputMode}
             />
           ) : (
             <QuestionView
+              key={currentQuestion.id}
               question={currentQuestion}
               questionIndex={currentQuestionIndex}
               totalQuestions={session.questions.length}

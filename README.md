@@ -127,7 +127,7 @@ decision came down to structured-output reliability, latency, and cost at hackat
 | OpenAI GPT-4o                                        | Strong, but slower and more expensive per call than we needed for six-question grading loops                                                |
 | **Google Gemini + Groq Llama (chosen)**              | Best fit for the two distinct jobs below                                                                                                    |
 
-**Google Gemini 2.0 Flash** — `@ai-sdk/google`, used for document understanding: resume parsing,
+**Google Gemini 2.5 Flash** — `@ai-sdk/google`, used for document understanding: resume parsing,
 JD parsing, interview question generation, and session summaries. Chosen for a large context
 window (a full resume plus JD fits comfortably), strong adherence to JSON schemas via
 `generateObject`, and a free tier sufficient for the hackathon.
@@ -296,14 +296,16 @@ specifically asserts that unauthenticated API calls return `401` JSON rather tha
 
 ## Deployment
 
-The application runs locally with the [Installation Guide](#installation-guide) above. To deploy it
-to Vercel:
+**Live:** [console-hired.vercel.app](https://console-hired.vercel.app)
+
+Hosted on Vercel. To reproduce the deployment:
 
 1. Import the repository into Vercel; the Next.js preset needs no build configuration.
-2. Set every variable from [Environment Variables](#environment-variables) in the project settings.
-3. Add the deployed origin as an authorised redirect URI on the Google OAuth client
+2. Set the production branch to the branch that carries the application code.
+3. Set every variable from [Environment Variables](#environment-variables) in the project settings.
+4. Add the deployed origin as an authorised redirect URI on the Google OAuth client
    (`https://<your-domain>/api/auth/callback/google`).
-4. Run `npm run db:push` against the production `DATABASE_URL` so the schema exists before first
+5. Run `npm run db:push` against the production `DATABASE_URL` so the schema exists before first
    request.
 
 Route handlers that call AI models declare `maxDuration = 60`, which suits Vercel's serverless
