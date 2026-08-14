@@ -15,6 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { Logo } from "@/components/logo";
 import { DASHBOARD_NAV_ITEMS } from "../utils/nav-items";
 
 export function DashboardSidebar() {
@@ -23,10 +24,9 @@ export function DashboardSidebar() {
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link href="/" className="px-2 font-mono text-sm font-medium">
-          console.hired()
-        </Link>
+        <Logo size="sm" className="px-2" />
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
