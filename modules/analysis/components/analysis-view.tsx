@@ -67,14 +67,33 @@ export function AnalysisView({ id }: { id: string }) {
     return () => clearInterval(interval);
   }, [analysis, id]);
 
+  async function handleRetry() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/analyses/${id}`, { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        setAnalysis((prev) =>
+          prev
+            ? { ...prev, status: "processing", errorMessage: null }
+            : { id, status: "processing" }
+        );
+      } else {
+        setError(data.error || "Failed to restart analysis");
+      }
+    } catch {
+      setError("An error occurred while retrying");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (loading || !analysis || analysis.status === "pending" || analysis.status === "processing") {
     return (
       <ProcessingView
         errorMessage={analysis?.status === "failed" ? analysis.errorMessage : error}
-        onRetry={() => {
-          setLoading(true);
-          setError(null);
-        }}
+        onRetry={handleRetry}
       />
     );
   }
@@ -83,10 +102,7 @@ export function AnalysisView({ id }: { id: string }) {
     return (
       <ProcessingView
         errorMessage={analysis.errorMessage || "Analysis failed"}
-        onRetry={() => {
-          setLoading(true);
-          setError(null);
-        }}
+        onRetry={handleRetry}
       />
     );
   }
