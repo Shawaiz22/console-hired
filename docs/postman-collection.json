@@ -1,0 +1,421 @@
+{
+  "info": {
+    "name": "Console.Hired — RICR-HIM-1024",
+    "description": "AI Resume Analyzer & Mock Interview Platform.\n\nSETUP\n1. Set the `baseUrl` variable (default http://localhost:3000).\n2. Register an account and verify it via OTP (Auth folder) — sign-in is rejected until the email is verified.\n3. Set `email` and `password` variables, then run `Login — 1. Get CSRF token` followed by `Login — 2. Sign in`.\n4. Every other request is then authenticated from Postman's cookie jar.\n\nNOTE: authentication uses an httpOnly encrypted session cookie, not a bearer token. `Authorization: Bearer ...` will not work.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "email", "value": "you@example.com" },
+    { "key": "password", "value": "SecurePass123" },
+    { "key": "csrfToken", "value": "" },
+    { "key": "resumeId", "value": "" },
+    { "key": "jobDescriptionId", "value": "" },
+    { "key": "analysisId", "value": "" },
+    { "key": "sessionId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Login",
+      "item": [
+        {
+          "name": "1. Get CSRF token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('csrfToken', json.csrfToken);",
+                  "pm.test('csrfToken captured', () => pm.expect(json.csrfToken).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/csrf",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "csrf"]
+            },
+            "description": "Returns a CSRF token and sets the csrf cookie. The test script stores the token as a collection variable."
+          }
+        },
+        {
+          "name": "2. Sign in (credentials)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "csrfToken", "value": "{{csrfToken}}" },
+                { "key": "email", "value": "{{email}}" },
+                { "key": "password", "value": "{{password}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/callback/credentials",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "callback", "credentials"]
+            },
+            "description": "Signs in and sets authjs.session-token in Postman's cookie jar. The account must already be verified."
+          }
+        },
+        {
+          "name": "3. Session (verify signed in)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/session",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "session"]
+            },
+            "description": "Returns the current session. An empty object means sign-in did not take."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Aisha Khan\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "201 with requiresVerification: true, and an OTP email is dispatched. 409 if the email already has a password."
+          }
+        },
+        {
+          "name": "Send OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{email}}\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/send-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "send-otp"]
+            },
+            "description": "Always 200 with the same message regardless of whether the account exists. 429 if requested within 60s of the last send."
+          }
+        },
+        {
+          "name": "Verify OTP",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/verify-otp",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "verify-otp"]
+            },
+            "description": "Replace the code with the one emailed to you. Five wrong attempts deletes the code (429)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resumes",
+      "item": [
+        {
+          "name": "Upload resume",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('resumeId', pm.response.json().resume.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [], "description": "PDF or DOCX, max 5MB" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/resumes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "resumes"]
+            },
+            "description": "Select a local PDF/DOCX in the file field before sending. 422 with code NO_TEXT_LAYER means a scanned PDF with no selectable text. Stores resumeId automatically."
+          }
+        },
+        {
+          "name": "List resumes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/resumes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "resumes"]
+            },
+            "description": "Newest first. `parsed` is null until background parsing finishes."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Job Descriptions",
+      "item": [
+        {
+          "name": "Create job description (text)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('jobDescriptionId', pm.response.json().jobDescription.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior React Engineer\",\n  \"company\": \"Acme Corp\",\n  \"rawText\": \"We are seeking a Senior React Engineer to own our customer-facing dashboard. You will architect state management across a large single-page application, drive performance improvements, mentor mid-level engineers, and collaborate with design on a shared component library. Required: 5+ years React, TypeScript, state management at scale, testing discipline, and experience with CI/CD pipelines. Nice to have: Next.js App Router, PostgreSQL, and observability tooling.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-descriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-descriptions"]
+            },
+            "description": "rawText must be at least 100 characters. Stores jobDescriptionId automatically."
+          }
+        },
+        {
+          "name": "List job descriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/job-descriptions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "job-descriptions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analyses",
+      "item": [
+        {
+          "name": "Start analysis",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 202) {",
+                  "  pm.collectionVariables.set('analysisId', pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resumeId\": \"{{resumeId}}\",\n  \"jobDescriptionId\": \"{{jobDescriptionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analyses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analyses"]
+            },
+            "description": "202 Accepted — scoring runs asynchronously. Poll Get analysis until status is complete or failed."
+          }
+        },
+        {
+          "name": "Get analysis",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analyses/{{analysisId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analyses", "{{analysisId}}"]
+            },
+            "description": "overallScore = skills 40% + evidence 30% + experience 20% + ATS 10%. Score fields are null while pending/processing."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Interviews",
+      "item": [
+        {
+          "name": "Start interview",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('sessionId', pm.response.json().session.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"resumeId\": \"{{resumeId}}\",\n  \"jobDescriptionId\": \"{{jobDescriptionId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews"]
+            },
+            "description": "Generates 6 questions (4 technical, 2 behavioural) grounded in this resume and JD. 503 if the model is unavailable."
+          }
+        },
+        {
+          "name": "Get interview session",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{sessionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{sessionId}}"]
+            },
+            "description": "Returns the session plus any answers already submitted, so a session can be resumed."
+          }
+        },
+        {
+          "name": "Submit answer",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionIndex\": 0,\n  \"answerText\": \"At Acme I owned the migration of a forty-screen dashboard from legacy Redux to RTK Query. I introduced it incrementally behind feature flags so we could ship weekly, cut boilerplate by roughly sixty percent, and completed the migration with zero rollbacks.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{sessionId}}/answers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{sessionId}}", "answers"]
+            },
+            "description": "questionIndex 0-5, answerText at least 50 characters. Returns a 1-5 rubric evaluation with STAR breakdown on behavioural answers."
+          }
+        },
+        {
+          "name": "Complete interview",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{sessionId}}/complete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{sessionId}}", "complete"]
+            },
+            "description": "No body. Final score is the mean of all dimensions across graded answers, scaled to 100. 400 if no answers were submitted."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "Get stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "stats"]
+            },
+            "description": "Counts, best score, recent activity, and dated scoreHistory. null in scoreHistory means no score that day."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth failure checks",
+      "item": [
+        {
+          "name": "Unauthenticated request returns 401 JSON",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('401 not a redirect', () => pm.response.to.have.status(401));",
+                  "pm.test('JSON error body', () => pm.expect(pm.response.json().error).to.eql('Unauthorized'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/resumes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "resumes"]
+            },
+            "description": "Run this with cookies cleared. API routes must answer with 401 JSON, never a 307 redirect to /login."
+          }
+        },
+        {
+          "name": "Malformed UUID returns 400",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/analyses/not-a-uuid",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "analyses", "not-a-uuid"]
+            },
+            "description": "Path parameters are validated as UUIDs before any database access."
+          }
+        }
+      ]
+    }
+  ]
+}

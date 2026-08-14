@@ -1,0 +1,19 @@
+# Maps the multiple git identities each of us committed under (local git config
+# vs. GitHub's noreply address) onto one canonical name and email, so
+# `git shortlog -sne` and `git log --author` report three contributors rather
+# than six. Add a line here if you ever commit from a new machine or account.
+
+Abu Quatada <abuquatada84@gmail.com>
+Abu Quatada <abuquatada84@gmail.com> <158571004+abuquatada@users.noreply.github.com>
+Abu Quatada <abuquatada84@gmail.com> ABU QUATADA <158571004+abuquatada@users.noreply.github.com>
+Abu Quatada <abuquatada84@gmail.com> abuquatada <abuquatada84@gmail.com>
+
+Fahad Khan <fahad96133@gmail.com>
+Fahad Khan <fahad96133@gmail.com> <76210333+Fahadkhan9@users.noreply.github.com>
+Fahad Khan <fahad96133@gmail.com> Fahadkhan9 <fahad96133@gmail.com>
+Fahad Khan <fahad96133@gmail.com> Fahadkhan9 <76210333+Fahadkhan9@users.noreply.github.com>
+
+Shawaiz Siddiqui <shawaizsidd22@gmail.com>
+Shawaiz Siddiqui <shawaizsidd22@gmail.com> <105994493+Shawaiz22@users.noreply.github.com>
+Shawaiz Siddiqui <shawaizsidd22@gmail.com> Shawaiz22 <shawaizsidd22@gmail.com>
+Shawaiz Siddiqui <shawaizsidd22@gmail.com> Shawaiz Siddiqui <105994493+Shawaiz22@users.noreply.github.com>

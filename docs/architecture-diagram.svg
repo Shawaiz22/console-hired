@@ -1,0 +1,203 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="1280" viewBox="0 0 1280 1280" font-family="Helvetica, Arial, sans-serif">
+  <rect width="1280" height="1280" fill="#ffffff"/>
+
+  <text x="40" y="48" font-size="26" font-weight="bold" fill="#0f172a">Console.Hired — System Architecture</text>
+  <text x="40" y="74" font-size="14" fill="#64748b">AI Resume Analyzer &amp; Mock Interview Platform · Team RICR-HIM-1024 · Next.js 16 fullstack on Neon Postgres</text>
+
+  <!-- ============ CLIENT ============ -->
+  <rect x="40" y="100" width="480" height="180" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="60" y="126" font-size="15" font-weight="bold" fill="#1d4ed8">Browser — Presentation</text>
+
+  <rect x="60" y="140" width="200" height="52" rx="6" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="72" y="160" font-size="12" font-weight="bold" fill="#0f172a">Server Components</text>
+  <text x="72" y="177" font-size="11" fill="#64748b">dashboard · history · analysis</text>
+
+  <rect x="288" y="140" width="212" height="52" rx="6" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="300" y="160" font-size="12" font-weight="bold" fill="#0f172a">Client Components</text>
+  <text x="300" y="177" font-size="11" fill="#64748b">forms · charts · interview</text>
+
+  <rect x="60" y="204" width="440" height="58" rx="6" fill="#ffffff" stroke="#93c5fd"/>
+  <text x="72" y="224" font-size="12" font-weight="bold" fill="#0f172a">React Hook Form + Zod</text>
+  <text x="72" y="242" font-size="11" fill="#64748b">the same schema validates the form and the API route it posts to</text>
+  <text x="72" y="256" font-size="11" fill="#64748b">Tailwind CSS 4 · shadcn/ui on Base UI · responsive, mobile-first</text>
+
+  <!-- ============ MIDDLEWARE ============ -->
+  <rect x="560" y="100" width="300" height="88" rx="10" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="580" y="126" font-size="15" font-weight="bold" fill="#b45309">Route Protection</text>
+  <text x="580" y="148" font-size="11" fill="#78350f">proxy.ts — matcher: /dashboard/*</text>
+  <text x="580" y="166" font-size="11" fill="#78350f">requireUser() redirects · requireApiUser() → 401 JSON</text>
+  <text x="580" y="180" font-size="11" fill="#78350f">httpOnly encrypted JWE session cookie</text>
+
+  <!-- ============ AUTH ============ -->
+  <rect x="900" y="100" width="340" height="88" rx="10" fill="#f3e8ff" stroke="#a855f7" stroke-width="1.5"/>
+  <text x="920" y="126" font-size="15" font-weight="bold" fill="#7e22ce">NextAuth v5 (Auth.js)</text>
+  <text x="920" y="148" font-size="11" fill="#581c87">Credentials (bcrypt cost 10) + Google OAuth</text>
+  <text x="920" y="166" font-size="11" fill="#581c87">JWT strategy · DrizzleAdapter</text>
+  <text x="920" y="180" font-size="11" fill="#581c87">email OTP gate (SHA-256, 5 attempts, 60s cooldown)</text>
+
+  <!-- ============ API LAYER ============ -->
+  <rect x="40" y="310" width="1200" height="150" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+  <text x="60" y="336" font-size="15" font-weight="bold" fill="#047857">Backend — Next.js Route Handlers under /api/v1  (15 endpoints, versioned REST)</text>
+
+  <rect x="60" y="350" width="176" height="46" rx="6" fill="#ffffff" stroke="#6ee7b7"/>
+  <text x="72" y="368" font-size="11.5" font-weight="bold" fill="#0f172a">/auth/*</text>
+  <text x="72" y="385" font-size="10.5" fill="#64748b">register · send-otp · verify-otp</text>
+
+  <rect x="248" y="350" width="176" height="46" rx="6" fill="#ffffff" stroke="#6ee7b7"/>
+  <text x="260" y="368" font-size="11.5" font-weight="bold" fill="#0f172a">/resumes</text>
+  <text x="260" y="385" font-size="10.5" fill="#64748b">GET · POST (multipart)</text>
+
+  <rect x="436" y="350" width="176" height="46" rx="6" fill="#ffffff" stroke="#6ee7b7"/>
+  <text x="448" y="368" font-size="11.5" font-weight="bold" fill="#0f172a">/job-descriptions</text>
+  <text x="448" y="385" font-size="10.5" fill="#64748b">GET · POST (text or file)</text>
+
+  <rect x="624" y="350" width="176" height="46" rx="6" fill="#ffffff" stroke="#6ee7b7"/>
+  <text x="636" y="368" font-size="11.5" font-weight="bold" fill="#0f172a">/analyses</text>
+  <text x="636" y="385" font-size="10.5" fill="#64748b">POST → 202 · GET /:id</text>
+
+  <rect x="812" y="350" width="220" height="46" rx="6" fill="#ffffff" stroke="#6ee7b7"/>
+  <text x="824" y="368" font-size="11.5" font-weight="bold" fill="#0f172a">/interviews</text>
+  <text x="824" y="385" font-size="10.5" fill="#64748b">POST · GET/:id · answers · complete</text>
+
+  <rect x="1044" y="350" width="176" height="46" rx="6" fill="#ffffff" stroke="#6ee7b7"/>
+  <text x="1056" y="368" font-size="11.5" font-weight="bold" fill="#0f172a">/stats</text>
+  <text x="1056" y="385" font-size="10.5" fill="#64748b">aggregates · scoreHistory</text>
+
+  <rect x="60" y="408" width="1160" height="38" rx="6" fill="#ffffff" stroke="#6ee7b7"/>
+  <text x="72" y="432" font-size="11" fill="#334155">Every protected route: resolve session → scope query by userId in SQL → foreign rows return 404 (no enumeration) · Zod on every body · UUID check on every :id</text>
+
+  <!-- ============ DOMAIN ============ -->
+  <rect x="40" y="490" width="700" height="230" rx="10" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <text x="60" y="516" font-size="15" font-weight="bold" fill="#334155">Domain Logic — modules/  (no framework imports)</text>
+
+  <rect x="60" y="530" width="320" height="80" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="72" y="550" font-size="12" font-weight="bold" fill="#0f172a">resume/ — parsing</text>
+  <text x="72" y="568" font-size="10.5" fill="#64748b">extract.ts — unpdf (PDF) · mammoth (DOCX)</text>
+  <text x="72" y="583" font-size="10.5" fill="#64748b">parse-resume.ts · parse-jd.ts → structured JSON</text>
+  <text x="72" y="598" font-size="10.5" fill="#64748b">SHA-256 text hash → parse cache</text>
+
+  <rect x="396" y="530" width="328" height="80" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="408" y="550" font-size="12" font-weight="bold" fill="#0f172a">analysis/ — scoring engine</text>
+  <text x="408" y="568" font-size="10.5" fill="#64748b">skills 40% · evidence 30% · experience 20%</text>
+  <text x="408" y="583" font-size="10.5" fill="#64748b">ats.ts 10% — PDF text geometry, columns, headings</text>
+  <text x="408" y="598" font-size="10.5" fill="#64748b">deterministic score, generative explanation</text>
+
+  <rect x="60" y="622" width="320" height="80" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="72" y="642" font-size="12" font-weight="bold" fill="#0f172a">interview/ — mock interview</text>
+  <text x="72" y="660" font-size="10.5" fill="#64748b">6 questions grounded in resume + JD</text>
+  <text x="72" y="675" font-size="10.5" fill="#64748b">prompts.ts — 1–5 rubric, STAR detection</text>
+  <text x="72" y="690" font-size="10.5" fill="#64748b">per-answer grading → session summary</text>
+
+  <rect x="396" y="622" width="328" height="80" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="408" y="642" font-size="12" font-weight="bold" fill="#0f172a">dashboard/ + auth/</text>
+  <text x="408" y="660" font-size="10.5" fill="#64748b">real dated score history (gaps, not interpolation)</text>
+  <text x="408" y="675" font-size="10.5" fill="#64748b">stats overview · activity · filterable history</text>
+  <text x="408" y="690" font-size="10.5" fill="#64748b">login · register · OTP verify forms</text>
+
+  <!-- ============ EXTERNAL ============ -->
+  <rect x="770" y="490" width="470" height="230" rx="10" fill="#fff1f2" stroke="#f43f5e" stroke-width="1.5"/>
+  <text x="790" y="516" font-size="15" font-weight="bold" fill="#be123c">External Services</text>
+
+  <rect x="790" y="530" width="430" height="56" rx="6" fill="#ffffff" stroke="#fda4af"/>
+  <text x="802" y="550" font-size="12" font-weight="bold" fill="#0f172a">Google Gemini 2.0 Flash — @ai-sdk/google</text>
+  <text x="802" y="567" font-size="10.5" fill="#64748b">resume &amp; JD parsing · question generation · session summary</text>
+  <text x="802" y="580" font-size="10.5" fill="#64748b">large context, strong JSON-schema adherence</text>
+
+  <rect x="790" y="596" width="430" height="52" rx="6" fill="#ffffff" stroke="#fda4af"/>
+  <text x="802" y="616" font-size="12" font-weight="bold" fill="#0f172a">Groq Llama 3.3 70B — @ai-sdk/groq</text>
+  <text x="802" y="633" font-size="10.5" fill="#64748b">answer grading — chosen for latency (6 calls per session,</text>
+  <text x="802" y="645" font-size="10.5" fill="#64748b">user waiting) · all calls via generateObject + Zod</text>
+
+  <rect x="790" y="658" width="208" height="46" rx="6" fill="#ffffff" stroke="#fda4af"/>
+  <text x="802" y="677" font-size="11.5" font-weight="bold" fill="#0f172a">Google OAuth</text>
+  <text x="802" y="693" font-size="10.5" fill="#64748b">social sign-in</text>
+
+  <rect x="1012" y="658" width="208" height="46" rx="6" fill="#ffffff" stroke="#fda4af"/>
+  <text x="1024" y="677" font-size="11.5" font-weight="bold" fill="#0f172a">Gmail SMTP</text>
+  <text x="1024" y="693" font-size="10.5" fill="#64748b">nodemailer — OTP email</text>
+
+  <!-- ============ DATABASE ============ -->
+  <rect x="40" y="750" width="1200" height="120" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="60" y="776" font-size="15" font-weight="bold" fill="#0369a1">Data Layer — Neon serverless PostgreSQL via Drizzle ORM (@neondatabase/serverless HTTP driver)</text>
+
+  <rect x="60" y="790" width="180" height="30" rx="5" fill="#ffffff" stroke="#7dd3fc"/>
+  <text x="70" y="810" font-size="10.5" fill="#0f172a">user · account</text>
+
+  <rect x="252" y="790" width="200" height="30" rx="5" fill="#ffffff" stroke="#7dd3fc"/>
+  <text x="262" y="810" font-size="10.5" fill="#0f172a">verificationToken</text>
+
+  <rect x="464" y="790" width="240" height="30" rx="5" fill="#ffffff" stroke="#7dd3fc"/>
+  <text x="474" y="810" font-size="10.5" fill="#0f172a">email_verification_codes</text>
+
+  <rect x="716" y="790" width="240" height="30" rx="5" fill="#ffffff" stroke="#7dd3fc"/>
+  <text x="726" y="810" font-size="10.5" fill="#0f172a">resumes · job_descriptions</text>
+
+  <rect x="968" y="790" width="252" height="30" rx="5" fill="#ffffff" stroke="#7dd3fc"/>
+  <text x="978" y="810" font-size="10.5" fill="#0f172a">analyses · interview_sessions</text>
+
+  <rect x="60" y="828" width="1160" height="30" rx="5" fill="#ffffff" stroke="#7dd3fc"/>
+  <text x="70" y="848" font-size="10.5" fill="#334155">interview_answers · 9 tables · ON DELETE CASCADE from user · pgEnum status columns · jsonb for validated AI output · indexes on user_id and text_hash</text>
+
+  <!-- ============ CORE FLOW ============ -->
+  <rect x="40" y="900" width="1200" height="230" rx="10" fill="#fafafa" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="60" y="926" font-size="15" font-weight="bold" fill="#334155">Core Request Flow — resume to interview feedback</text>
+
+  <rect x="60" y="940" width="1160" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="72" y="958" font-size="11" font-weight="bold" fill="#0f172a">1 · Upload &#8594; POST /api/v1/resumes</text>
+  <text x="72" y="974" font-size="10.5" fill="#64748b">extract text (unpdf/mammoth) &#8594; store with SHA-256 hash &#8594; 201 &#8594; background parse into structured JSON (Gemini + Zod)</text>
+
+  <rect x="60" y="990" width="1160" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="72" y="1008" font-size="11" font-weight="bold" fill="#0f172a">2 · Analyse &#8594; POST /api/v1/analyses  (202 Accepted, asynchronous)</text>
+  <text x="72" y="1024" font-size="10.5" fill="#64748b">pending &#8594; processing &#8594; complete · four weighted signals computed deterministically, then Gemini explains gaps and rewrites bullets · UI polls GET /:id</text>
+
+  <rect x="60" y="1040" width="1160" height="42" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+  <text x="72" y="1058" font-size="11" font-weight="bold" fill="#0f172a">3 · Interview &#8594; POST /api/v1/interviews &#8594; /:id/answers (&#215;6) &#8594; /:id/complete</text>
+  <text x="72" y="1074" font-size="10.5" fill="#64748b">6 questions grounded in this resume + JD · each answer graded 1&#8211;5 on clarity, relevance, completeness, specificity · final score from stored evaluations</text>
+
+  <rect x="60" y="1090" width="1160" height="30" rx="6" fill="#fff7ed" stroke="#fdba74"/>
+  <text x="72" y="1110" font-size="10.5" fill="#7c2d12">Error handling: unsupported file &#8594; 400 · no text layer &#8594; 422 with code · foreign resource &#8594; 404 · AI provider down &#8594; 503 retryable. Feedback is never fabricated when a model call fails.</text>
+
+  <!-- ============ LEGEND ============ -->
+  <text x="60" y="1168" font-size="12" font-weight="bold" fill="#334155">Legend</text>
+  <rect x="60" y="1180" width="18" height="14" rx="3" fill="#eff6ff" stroke="#3b82f6"/>
+  <text x="86" y="1192" font-size="10.5" fill="#475569">presentation</text>
+  <rect x="190" y="1180" width="18" height="14" rx="3" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="216" y="1192" font-size="10.5" fill="#475569">auth / protection</text>
+  <rect x="340" y="1180" width="18" height="14" rx="3" fill="#ecfdf5" stroke="#10b981"/>
+  <text x="366" y="1192" font-size="10.5" fill="#475569">API layer</text>
+  <rect x="460" y="1180" width="18" height="14" rx="3" fill="#f8fafc" stroke="#64748b"/>
+  <text x="486" y="1192" font-size="10.5" fill="#475569">domain logic</text>
+  <rect x="600" y="1180" width="18" height="14" rx="3" fill="#fff1f2" stroke="#f43f5e"/>
+  <text x="626" y="1192" font-size="10.5" fill="#475569">external service</text>
+  <rect x="750" y="1180" width="18" height="14" rx="3" fill="#f0f9ff" stroke="#0284c7"/>
+  <text x="776" y="1192" font-size="10.5" fill="#475569">data layer</text>
+
+  <text x="60" y="1232" font-size="10" fill="#94a3b8">Source: docs/architecture-diagram.svg — edit the SVG and re-export to regenerate this PNG.</text>
+
+  <!-- ============ ARROWS ============ -->
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+  </defs>
+
+  <line x1="280" y1="280" x2="280" y2="310" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="290" y="300" font-size="10" fill="#475569">fetch / server read</text>
+
+  <line x1="710" y1="188" x2="710" y2="310" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="718" y="250" font-size="10" fill="#475569">session</text>
+
+  <line x1="860" y1="144" x2="900" y2="144" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+  <line x1="390" y1="460" x2="390" y2="490" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="400" y="480" font-size="10" fill="#475569">invoke domain logic</text>
+
+  <line x1="1000" y1="460" x2="1000" y2="490" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="1010" y="480" font-size="10" fill="#475569">generateObject + Zod</text>
+
+  <line x1="390" y1="720" x2="390" y2="750" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="400" y="740" font-size="10" fill="#475569">Drizzle queries</text>
+
+  <line x1="1000" y1="720" x2="1000" y2="750" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="1010" y="740" font-size="10" fill="#475569">persist parsed output</text>
+</svg>
