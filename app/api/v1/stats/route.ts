@@ -1,13 +1,16 @@
 import { NextResponse } from "next/server";
 import { and, asc, count, desc, eq, max } from "drizzle-orm";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { analyses, interviewSessions, jobDescriptions, resumes } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const user = await requireUser();
+  const user = await requireApiUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   try {
     // Run count queries and max queries concurrently for maximum performance

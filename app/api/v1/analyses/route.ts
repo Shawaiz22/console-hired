@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { analyses, jobDescriptions, resumes } from "@/lib/db/schema";
 import { runAnalysis } from "@/modules/analysis/utils/run-analysis";
@@ -14,7 +14,10 @@ const CreateAnalysisSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const user = await requireUser();
+  const user = await requireApiUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   let body: unknown;
   try {

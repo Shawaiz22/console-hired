@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { requireUser } from "@/lib/auth-helpers";
+import { and, eq } from "drizzle-orm";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { interviewSessions } from "@/lib/db/schema";
 
@@ -9,8 +9,8 @@ export const runtime = "nodejs";
 type Params = Promise<{ id: string }>;
 
 export async function POST(_req: Request, { params }: { params: Params }) {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,7 +33,8 @@ export async function POST(_req: Request, { params }: { params: Params }) {
   const overallScore = 84;
 
   try {
-    await db
+    // Ownership: scope the update so one user cannot complete another's session
+    const updated = await db
       .update(interviewSessions)
       .set({
         status: "completed",
@@ -41,9 +42,15 @@ export async function POST(_req: Request, { params }: { params: Params }) {
         summary,
         updatedAt: new Date(),
       })
-      .where(eq(interviewSessions.id, id));
+      .where(and(eq(interviewSessions.id, id), eq(interviewSessions.userId, user.id)))
+      .returning({ id: interviewSessions.id });
+
+    if (updated.length === 0) {
+      return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
+    }
   } catch (err) {
     console.error("[complete-interview] DB update error:", err);
+    return NextResponse.json({ error: "Could not complete interview session" }, { status: 500 });
   }
 
   return NextResponse.json({
