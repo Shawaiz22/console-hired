@@ -64,6 +64,12 @@ export async function POST(req: Request) {
     if (err instanceof ExtractionError) {
       return NextResponse.json({ error: err.message, code: err.code }, { status: 422 });
     }
+    if (err && typeof err === "object" && "code" in err && err.code === "23503") {
+      return NextResponse.json(
+        { error: "User session expired or user not found. Please log in again." },
+        { status: 401 }
+      );
+    }
     console.error("[resume-upload]", err);
     return NextResponse.json({ error: "Could not process this file" }, { status: 500 });
   }

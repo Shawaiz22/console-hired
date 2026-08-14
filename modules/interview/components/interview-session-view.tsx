@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { VideoAnalysis } from "@/components/interview/video-analysis";
 import { FeedbackCard } from "./feedback-card";
 import { QuestionView } from "./question-view";
 import { SessionSummaryView } from "./session-summary";
@@ -172,26 +173,34 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 py-6">
+    <div className="mx-auto max-w-6xl space-y-6 py-6">
       {error && (
         <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>
       )}
 
-      {activeEvaluation ? (
-        <FeedbackCard
-          evaluation={activeEvaluation}
-          onNextQuestion={handleNextQuestion}
-          isLastQuestion={currentQuestionIndex === session.questions.length - 1}
-        />
-      ) : (
-        <QuestionView
-          question={currentQuestion}
-          questionIndex={currentQuestionIndex}
-          totalQuestions={session.questions.length}
-          onSubmitAnswer={handleAnswerSubmit}
-          isSubmitting={isSubmitting}
-        />
-      )}
+      <div className="grid gap-6 md:grid-cols-12 items-start">
+        <div className="md:col-span-7">
+          {activeEvaluation ? (
+            <FeedbackCard
+              evaluation={activeEvaluation}
+              onNextQuestion={handleNextQuestion}
+              isLastQuestion={currentQuestionIndex === session.questions.length - 1}
+            />
+          ) : (
+            <QuestionView
+              question={currentQuestion}
+              questionIndex={currentQuestionIndex}
+              totalQuestions={session.questions.length}
+              onSubmitAnswer={handleAnswerSubmit}
+              isSubmitting={isSubmitting}
+            />
+          )}
+        </div>
+
+        <div className="md:col-span-5">
+          <VideoAnalysis />
+        </div>
+      </div>
     </div>
   );
 }
