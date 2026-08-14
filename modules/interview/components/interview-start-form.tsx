@@ -48,19 +48,36 @@ export function InterviewStartForm() {
         const jdsData = await jdsRes.json();
 
         const resumeOpts: Option[] = (resumesData.resumes || []).map(
-          (r: { id: string; fileName: string }) => ({
-            id: r.id,
-            label: r.fileName,
-          })
+          (r: { id: string; fileName: string; parsed?: { name?: string } }) => {
+            const candidateName = r.parsed?.name;
+            const label = candidateName ? `${candidateName} (${r.fileName})` : r.fileName;
+            return {
+              id: r.id,
+              label,
+            };
+          }
         );
 
         const jdOpts: Option[] = (jdsData.jobDescriptions || []).map(
-          (j: { id: string; title?: string; company?: string; rawText: string }) => ({
-            id: j.id,
-            label: j.title
-              ? `${j.title} ${j.company ? `(${j.company})` : ""}`
-              : j.rawText.slice(0, 40) + "...",
-          })
+          (j: {
+            id: string;
+            title?: string;
+            company?: string;
+            rawText: string;
+            parsed?: { title?: string; company?: string };
+          }) => {
+            const title = j.title || j.parsed?.title;
+            const company = j.company || j.parsed?.company;
+            const label = title
+              ? `${title}${company ? ` (${company})` : ""}`
+              : j.rawText
+                ? j.rawText.slice(0, 40) + "..."
+                : "Job Description";
+            return {
+              id: j.id,
+              label,
+            };
+          }
         );
 
         setResumes(resumeOpts);
@@ -138,11 +155,13 @@ export function InterviewStartForm() {
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger id="resumeSelect" className="w-full">
-                        <SelectValue placeholder="Select a resume" />
+                        <SelectValue placeholder="Select a resume">
+                          {resumes.find((r) => r.id === field.value)?.label ?? "Select a resume"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {resumes.map((r) => (
-                          <SelectItem key={r.id} value={r.id}>
+                          <SelectItem key={r.id} value={r.id} label={r.label}>
                             {r.label}
                           </SelectItem>
                         ))}
@@ -167,11 +186,14 @@ export function InterviewStartForm() {
                   render={({ field }) => (
                     <Select value={field.value} onValueChange={field.onChange}>
                       <SelectTrigger id="jdSelect" className="w-full">
-                        <SelectValue placeholder="Select a job description" />
+                        <SelectValue placeholder="Select a job description">
+                          {jds.find((j) => j.id === field.value)?.label ??
+                            "Select a job description"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {jds.map((j) => (
-                          <SelectItem key={j.id} value={j.id}>
+                          <SelectItem key={j.id} value={j.id} label={j.label}>
                             {j.label}
                           </SelectItem>
                         ))}
