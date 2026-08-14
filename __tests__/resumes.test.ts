@@ -5,7 +5,7 @@
 import { POST as uploadResumeHandler } from "@/app/api/v1/resumes/route";
 
 jest.mock("@/lib/auth-helpers", () => ({
-  requireUser: jest.fn().mockResolvedValue({ id: "user-123", email: "test@example.com" }),
+  requireApiUser: jest.fn().mockResolvedValue({ id: "user-123", email: "test@example.com" }),
 }));
 
 jest.mock("@/modules/resume/utils/parse-resume", () => ({
