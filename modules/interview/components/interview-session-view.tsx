@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { FeedbackCard } from "./feedback-card";
 import { QuestionView } from "./question-view";
 import { SessionSummaryView } from "./session-summary";
+import { stopSpeaking } from "../utils/speak";
 import {
   type AnswerEvaluation,
   type InterviewQuestion,
@@ -75,6 +76,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
 
   const handleAnswerSubmit = useCallback(
     async (answerText: string, inputMode: "text" | "voice" = "text") => {
+      stopSpeaking();
       setIsSubmitting(true);
       setError(null);
 
@@ -104,6 +106,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   );
 
   const handleNextQuestion = useCallback(async () => {
+    stopSpeaking();
     setActiveEvaluation(null);
 
     const questionCount = session?.questions.length ?? 0;

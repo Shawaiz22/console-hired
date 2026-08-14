@@ -1,11 +1,12 @@
 "use client";
 
-import { CheckCircle, AlertTriangle, ArrowRight, Award, Mic } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { AlertTriangle, ArrowRight, Award, CheckCircle, Mic, Volume2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { type AnswerEvaluation } from "../schemas/interview.schema";
+import { useAudioPlayer } from "../hooks/use-audio-player";
 
 interface FeedbackCardProps {
   evaluation: AnswerEvaluation;
@@ -20,6 +21,8 @@ export function FeedbackCard({
   isLastQuestion,
   inputMode = "text",
 }: FeedbackCardProps) {
+  const { isSpeaking, playText, stop } = useAudioPlayer();
+
   const scoreDimensions = [
     { label: "Clarity", score: evaluation.clarity },
     { label: "Relevance", score: evaluation.relevance },
@@ -34,6 +37,25 @@ export function FeedbackCard({
     { key: "result", label: "Result", val: evaluation.star?.result },
   ];
 
+  const handleListenFeedback = () => {
+    if (isSpeaking) {
+      stop();
+      return;
+    }
+
+    const summaryText = `Answer feedback. Clarity: ${evaluation.clarity} out of 5. Relevance: ${
+      evaluation.relevance
+    } out of 5. Strengths: ${evaluation.strengths.join(". ")}. Areas for improvement: ${evaluation.improvements.join(
+      ". "
+    )}.`;
+    playText(summaryText, true);
+  };
+
+  const handleNext = () => {
+    stop();
+    onNextQuestion();
+  };
+
   return (
     <Card className="mx-auto max-w-2xl border-primary/30 bg-card">
       <CardHeader className="pb-4">
@@ -43,6 +65,19 @@ export function FeedbackCard({
             <CardTitle className="text-lg">Answer Feedback</CardTitle>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleListenFeedback}
+              className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+              title={isSpeaking ? "Stop feedback audio" : "Listen to feedback audio"}
+            >
+              <Volume2 className={cn("size-3.5", isSpeaking && "text-primary animate-pulse")} />
+              <span className="hidden sm:inline">
+                {isSpeaking ? "Speaking..." : "Listen to Feedback"}
+              </span>
+            </Button>
             {inputMode === "voice" ? (
               <Badge
                 variant="secondary"
@@ -146,7 +181,7 @@ export function FeedbackCard({
         </div>
 
         {/* Next Question Action */}
-        <Button onClick={onNextQuestion} className="w-full">
+        <Button onClick={handleNext} className="w-full">
           {isLastQuestion ? "Complete Interview & View Summary" : "Next Question"}
           <ArrowRight className="ml-2 size-4" />
         </Button>

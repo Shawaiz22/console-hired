@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { ChevronDown, ChevronUp, HelpCircle, Mic, MicOff } from "lucide-react";
+import { ChevronDown, ChevronUp, HelpCircle, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import {
   type AnswerFormValues,
   type InterviewQuestion,
 } from "../schemas/interview.schema";
+import { useAudioPlayer } from "../hooks/use-audio-player";
 import { useSpeech } from "../utils/use-speech";
 
 interface QuestionViewProps {
@@ -43,7 +44,14 @@ export function QuestionView({
     defaultValues: { answerText: "" },
   });
 
-  const { listening, supported, toggle, stop } = useSpeech(
+  const { isSpeaking, isMuted, toggleMute, playText, stop: stopAudio } = useAudioPlayer();
+
+  const {
+    listening,
+    supported,
+    toggle: toggleMic,
+    stop: stopMic,
+  } = useSpeech(
     (transcript) => {
       form.setValue("answerText", transcript, {
         shouldValidate: true,
@@ -55,6 +63,23 @@ export function QuestionView({
     { lang: "en-IN", continuous: true, interimResults: true }
   );
 
+  const lastPlayedQuestionIdRef = useRef<string | null>(null);
+
+  // Auto-play question audio when a new question arrives (if not muted)
+  useEffect(() => {
+    if (!question?.id || isMuted) return;
+
+    if (lastPlayedQuestionIdRef.current !== question.id) {
+      lastPlayedQuestionIdRef.current = question.id;
+      playText(question.question);
+    }
+  }, [question?.id, question?.question, isMuted, playText]);
+
+  const handleMicToggle = () => {
+    stopAudio(); // Silence any audio playback before user speaks into the mic
+    toggleMic();
+  };
+
   const answerText = useWatch({
     control: form.control,
     name: "answerText",
@@ -65,8 +90,9 @@ export function QuestionView({
 
   async function onSubmit(values: AnswerFormValues) {
     if (listening) {
-      stop();
+      stopMic();
     }
+    stopAudio();
     await onSubmitAnswer(values.answerText, inputMode);
   }
 
@@ -79,17 +105,50 @@ export function QuestionView({
             <span className="text-muted-foreground">
               Question {questionIndex + 1} of {totalQuestions}
             </span>
-            <Badge
-              variant="outline"
-              className={cn(
-                "capitalize font-mono text-[11px]",
-                isTechnical
-                  ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-                  : "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400"
-              )}
-            >
-              {question.type} • {question.targetSkill}
-            </Badge>
+            <div className="flex items-center gap-2">
+              {/* TTS Controls Toolbar */}
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => (isSpeaking ? stopAudio() : playText(question.question, true))}
+                  className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                  title={isSpeaking ? "Stop AI audio" : "Read question aloud"}
+                >
+                  <Volume2 className={cn("size-3.5", isSpeaking && "text-primary animate-pulse")} />
+                  <span className="hidden sm:inline">
+                    {isSpeaking ? "Reading..." : "Read Aloud"}
+                  </span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleMute}
+                  className="h-6 px-1.5 text-muted-foreground hover:text-foreground"
+                  title={isMuted ? "Unmute question audio" : "Mute question audio"}
+                >
+                  {isMuted ? (
+                    <VolumeX className="size-3.5 text-destructive" />
+                  ) : (
+                    <Volume2 className="size-3.5 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+
+              <Badge
+                variant="outline"
+                className={cn(
+                  "capitalize font-mono text-[11px]",
+                  isTechnical
+                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
+                    : "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400"
+                )}
+              >
+                {question.type} • {question.targetSkill}
+              </Badge>
+            </div>
           </div>
           <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
             <div
@@ -101,7 +160,11 @@ export function QuestionView({
 
         {/* Question Text */}
         <div className="space-y-3">
-          <h2 className="text-xl font-bold leading-snug tracking-tight">{question.question}</h2>
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-xl font-bold leading-snug tracking-tight flex-1">
+              {question.question}
+            </h2>
+          </div>
 
           {/* Collapsible Why Asked */}
           <div className="rounded-lg border border-border bg-muted/40 overflow-hidden">
@@ -147,7 +210,7 @@ export function QuestionView({
                     type="button"
                     variant={listening ? "destructive" : "outline"}
                     size="sm"
-                    onClick={toggle}
+                    onClick={handleMicToggle}
                     disabled={isSubmitting}
                     className={cn(
                       "h-7 gap-1.5 px-2.5 text-xs transition-all",
