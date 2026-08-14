@@ -24,7 +24,7 @@ export async function GET(_req: Request, { params }: { params: Params }) {
     });
 
     if (!session) {
-      if (id.startsWith("demo") || id === "demo") {
+      if (id.startsWith("demo") || id === "demo" || id === fixtureSession.id) {
         return NextResponse.json({
           session: {
             ...fixtureSession,

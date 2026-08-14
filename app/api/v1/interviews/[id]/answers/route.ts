@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
-import { z } from "zod";
+import { generateObject } from "ai";
 import { and, eq } from "drizzle-orm";
+import { z } from "zod";
+import { evaluationModel } from "@/lib/ai";
 import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { interviewAnswers, interviewSessions } from "@/lib/db/schema";
 import fixtureSession from "@/modules/interview/fixtures/interview.json";
+import {
+  AnswerEvaluationSchema,
+  type InterviewQuestion,
+} from "@/modules/interview/schemas/interview.schema";
+import { rubricPrompt } from "@/modules/interview/utils/prompts";
 
 export const runtime = "nodejs";
 
@@ -27,7 +34,8 @@ export async function POST(req: Request, { params }: { params: Params }) {
   const session = await db.query.interviewSessions.findFirst({
     where: and(eq(interviewSessions.id, sessionId), eq(interviewSessions.userId, user.id)),
   });
-  if (!session) {
+
+  if (!session && sessionId !== fixtureSession.id) {
     return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
   }
 
@@ -40,14 +48,17 @@ export async function POST(req: Request, { params }: { params: Params }) {
 
     const { questionIndex, answerText } = parsed.data;
 
-    // Use fixture evaluation as fallback template
-    const templateEval = fixtureSession.answers[questionIndex % 2]?.evaluation || {
+    const targetQuestion: InterviewQuestion =
+      (session?.questions as InterviewQuestion[])?.[questionIndex] ||
+      fixtureSession.questions[questionIndex];
+
+    let evaluation = fixtureSession.answers[questionIndex % 2]?.evaluation || {
       clarity: 4,
       relevance: 5,
       completeness: 4,
       specificity: 4,
       star:
-        questionIndex % 2 === 1
+        targetQuestion.type === "behavioral"
           ? {
               situation: "Faced tight sprint deadline with legacy codebase.",
               task: "Refactor core modules without breaking client APIs.",
@@ -60,22 +71,38 @@ export async function POST(req: Request, { params }: { params: Params }) {
     };
 
     try {
-      await db.insert(interviewAnswers).values({
-        sessionId,
-        questionIndex,
-        answerText,
-        inputMode: "text",
-        evaluation: templateEval,
+      const { object: aiEval } = await generateObject({
+        model: evaluationModel,
+        schema: AnswerEvaluationSchema,
+        prompt: rubricPrompt(targetQuestion, answerText),
       });
-    } catch (dbErr) {
-      console.error("[post-answer] DB insert error:", dbErr);
+
+      if (aiEval) {
+        evaluation = aiEval;
+      }
+    } catch (aiErr) {
+      console.warn("[interview-answer-ai-grading-fallback]", aiErr);
+    }
+
+    if (session) {
+      try {
+        await db.insert(interviewAnswers).values({
+          sessionId,
+          questionIndex,
+          answerText,
+          inputMode: "text",
+          evaluation,
+        });
+      } catch (dbErr) {
+        console.error("[post-answer] DB insert error:", dbErr);
+      }
     }
 
     return NextResponse.json({
       answer: {
         questionIndex,
         answerText,
-        evaluation: templateEval,
+        evaluation,
       },
     });
   } catch (err) {
