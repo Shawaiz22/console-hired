@@ -3,7 +3,8 @@
 REST API for the AI Resume Analyzer & Mock Interview Platform.
 Team **Console.log("Winners")** · RICR-HIM-1024 · HackInMotion 2026.
 
-- **Base URL:** `http://localhost:3000` (set `baseUrl` to your own origin when hosted)
+- **Base URL (local):** `http://localhost:3000`
+- **Base URL (hosted):** `https://console-hired.vercel.app`
 - **Version prefix:** `/api/v1`
 - **Content type:** `application/json` unless a route states `multipart/form-data`
 
