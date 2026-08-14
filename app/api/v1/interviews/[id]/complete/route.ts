@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { generateObject } from "ai";
 import { and, eq } from "drizzle-orm";
 import { extractionModel } from "@/lib/ai";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { interviewAnswers, interviewSessions } from "@/lib/db/schema";
 import {
@@ -15,8 +15,8 @@ export const runtime = "nodejs";
 type Params = Promise<{ id: string }>;
 
 export async function POST(_req: Request, { params }: { params: Params }) {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

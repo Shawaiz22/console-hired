@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { resumes } from "@/lib/db/schema";
 import { extractText, ExtractionError } from "@/modules/resume/utils/extract";
@@ -11,8 +11,8 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 export async function GET() {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -25,8 +25,8 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

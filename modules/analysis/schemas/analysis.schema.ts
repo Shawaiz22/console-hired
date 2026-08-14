@@ -36,6 +36,7 @@ export const AnalysisResultSchema = z.object({
   suggestions: z.array(SuggestionSchema),
 });
 
+export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
 export type EvidenceItem = z.infer<typeof EvidenceItemSchema>;
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
 export type Gap = z.infer<typeof GapSchema>;

@@ -3,7 +3,7 @@ import { generateObject } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { evaluationModel } from "@/lib/ai";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { interviewAnswers, interviewSessions } from "@/lib/db/schema";
 import fixtureSession from "@/modules/interview/fixtures/interview.json";
@@ -19,16 +19,25 @@ type Params = Promise<{ id: string }>;
 
 const AnswerInputSchema = z.object({
   questionIndex: z.number().min(0).max(5),
-  answerText: z.string().min(10),
+  answerText: z.string().min(50, "Answer must be at least 50 characters for AI evaluation"),
 });
 
 export async function POST(req: Request, { params }: { params: Params }) {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id: sessionId } = await params;
+
+  // Ownership: never write an answer into a session the caller does not own
+  const session = await db.query.interviewSessions.findFirst({
+    where: and(eq(interviewSessions.id, sessionId), eq(interviewSessions.userId, user.id)),
+  });
+
+  if (!session && sessionId !== fixtureSession.id) {
+    return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
+  }
 
   try {
     const body = await req.json();
@@ -39,18 +48,9 @@ export async function POST(req: Request, { params }: { params: Params }) {
 
     const { questionIndex, answerText } = parsed.data;
 
-    // Strict ownership check
-    const session = await db.query.interviewSessions.findFirst({
-      where: and(eq(interviewSessions.id, sessionId), eq(interviewSessions.userId, user.id)),
-    });
-
     const targetQuestion: InterviewQuestion =
       (session?.questions as InterviewQuestion[])?.[questionIndex] ||
       fixtureSession.questions[questionIndex];
-
-    if (!session && sessionId !== fixtureSession.id) {
-      return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
-    }
 
     let evaluation = fixtureSession.answers[questionIndex % 2]?.evaluation || {
       clarity: 4,
@@ -93,8 +93,8 @@ export async function POST(req: Request, { params }: { params: Params }) {
           inputMode: "text",
           evaluation,
         });
-      } catch {
-        // Ignore duplicate insert during dev retries
+      } catch (dbErr) {
+        console.error("[post-answer] DB insert error:", dbErr);
       }
     }
 

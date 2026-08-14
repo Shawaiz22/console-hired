@@ -3,7 +3,7 @@ import { generateObject } from "ai";
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { extractionModel } from "@/lib/ai";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { interviewSessions, jobDescriptions, resumes } from "@/lib/db/schema";
 import fixtureSession from "@/modules/interview/fixtures/interview.json";
@@ -17,8 +17,8 @@ const CreateInterviewSchema = z.object({
 });
 
 export async function POST(req: Request) {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
