@@ -50,6 +50,7 @@ export const AnswerInputSchema = z.object({
       MIN_ANSWER_LENGTH,
       `Answer must be at least ${MIN_ANSWER_LENGTH} characters for AI evaluation`
     ),
+  inputMode: z.enum(["text", "voice"]).default("text"),
 });
 
 /** The form only owns the answer text; questionIndex comes from session state. */

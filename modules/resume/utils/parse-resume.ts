@@ -18,10 +18,11 @@ export async function parseResume(resumeId: string) {
     return;
   }
 
-  const { object } = await generateObject({
-    model: extractionModel,
-    schema: ParsedResumeSchema,
-    prompt: `Extract structured information from this resume.
+  try {
+    const { object } = await generateObject({
+      model: extractionModel,
+      schema: ParsedResumeSchema,
+      prompt: `Extract structured information from this resume.
 
 Rules:
 - Copy bullet points VERBATIM. Do not summarise, shorten, or rewrite them.
@@ -31,7 +32,11 @@ Rules:
 
 Resume:
 ${resume.rawText}`,
-  });
+    });
 
-  await db.update(resumes).set({ parsed: object }).where(eq(resumes.id, resumeId));
+    await db.update(resumes).set({ parsed: object }).where(eq(resumes.id, resumeId));
+  } catch (err) {
+    console.error(`[parseResume:error] Failed to parse Resume ID ${resumeId}:`, err);
+    throw err;
+  }
 }

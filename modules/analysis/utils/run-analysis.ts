@@ -5,6 +5,8 @@ import { extractionModel } from "@/lib/ai";
 import { db } from "@/lib/db";
 import { analyses, jobDescriptions, resumes } from "@/lib/db/schema";
 import { Gap, GapSchema, Suggestion, SuggestionSchema } from "../schemas/analysis.schema";
+import { parseJD } from "@/modules/resume/utils/parse-jd";
+import { parseResume } from "@/modules/resume/utils/parse-resume";
 import { ParsedJDSchema } from "@/modules/resume/schemas/jd.schema";
 import { ParsedResumeSchema } from "@/modules/resume/schemas/resume.schema";
 import { matchSkills } from "./skills";
@@ -49,7 +51,7 @@ export async function runAnalysis(analysisId: string): Promise<void> {
       throw new Error(`Analysis record with id ${analysisId} not found`);
     }
 
-    // Load Resume and Job Description (poll briefly if parsing is still in progress)
+    // Load Resume and Job Description
     let resume = await db.query.resumes.findFirst({
       where: eq(resumes.id, analysis.resumeId),
     });
@@ -57,20 +59,35 @@ export async function runAnalysis(analysisId: string): Promise<void> {
       where: eq(jobDescriptions.id, analysis.jobDescriptionId),
     });
 
-    let attempts = 0;
-    while ((!resume?.parsed || !jd?.parsed) && attempts < 5) {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      attempts++;
-      resume = await db.query.resumes.findFirst({
-        where: eq(resumes.id, analysis.resumeId),
-      });
-      jd = await db.query.jobDescriptions.findFirst({
-        where: eq(jobDescriptions.id, analysis.jobDescriptionId),
-      });
-    }
-
     if (!resume) throw new Error("Resume not found");
     if (!jd) throw new Error("Job description not found");
+
+    // If either document hasn't completed parsing yet, parse on-demand
+    if (!resume.parsed) {
+      try {
+        await parseResume(analysis.resumeId);
+        resume = await db.query.resumes.findFirst({
+          where: eq(resumes.id, analysis.resumeId),
+        });
+      } catch (rErr) {
+        console.error("[runAnalysis:parseResume-retry-failed]", rErr);
+      }
+    }
+
+    if (!jd.parsed) {
+      try {
+        await parseJD(analysis.jobDescriptionId);
+        jd = await db.query.jobDescriptions.findFirst({
+          where: eq(jobDescriptions.id, analysis.jobDescriptionId),
+        });
+      } catch (jErr) {
+        console.error("[runAnalysis:parseJD-retry-failed]", jErr);
+      }
+    }
+
+    if (!resume || !jd) {
+      throw new Error("Resume or Job description not found");
+    }
 
     if (!resume.parsed || !jd.parsed) {
       const missingParts: string[] = [];
