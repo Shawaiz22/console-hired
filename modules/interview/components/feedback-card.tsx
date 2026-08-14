@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle, AlertTriangle, ArrowRight, Award } from "lucide-react";
+import { CheckCircle, AlertTriangle, ArrowRight, Award, Mic } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,9 +11,15 @@ interface FeedbackCardProps {
   evaluation: AnswerEvaluation;
   onNextQuestion: () => void;
   isLastQuestion: boolean;
+  inputMode?: "text" | "voice";
 }
 
-export function FeedbackCard({ evaluation, onNextQuestion, isLastQuestion }: FeedbackCardProps) {
+export function FeedbackCard({
+  evaluation,
+  onNextQuestion,
+  isLastQuestion,
+  inputMode = "text",
+}: FeedbackCardProps) {
   const scoreDimensions = [
     { label: "Clarity", score: evaluation.clarity },
     { label: "Relevance", score: evaluation.relevance },
@@ -36,9 +42,23 @@ export function FeedbackCard({ evaluation, onNextQuestion, isLastQuestion }: Fee
             <Award className="size-5 text-primary" />
             <CardTitle className="text-lg">Answer Feedback</CardTitle>
           </div>
-          <Badge variant="outline" className="font-mono text-xs">
-            AI Evaluation
-          </Badge>
+          <div className="flex items-center gap-2">
+            {inputMode === "voice" ? (
+              <Badge
+                variant="secondary"
+                className="border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-mono text-xs gap-1"
+              >
+                <Mic className="size-3" /> Voice Response
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="font-mono text-xs text-muted-foreground">
+                Typed Response
+              </Badge>
+            )}
+            <Badge variant="outline" className="font-mono text-xs">
+              AI Evaluation
+            </Badge>
+          </div>
         </div>
       </CardHeader>
 

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { ChevronDown, ChevronUp, HelpCircle } from "lucide-react";
+import { ChevronDown, ChevronUp, HelpCircle, Mic, MicOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -15,12 +15,13 @@ import {
   type AnswerFormValues,
   type InterviewQuestion,
 } from "../schemas/interview.schema";
+import { useSpeech } from "../utils/use-speech";
 
 interface QuestionViewProps {
   question: InterviewQuestion;
   questionIndex: number;
   totalQuestions: number;
-  onSubmitAnswer: (answerText: string) => Promise<void>;
+  onSubmitAnswer: (answerText: string, inputMode?: "text" | "voice") => Promise<void>;
   isSubmitting: boolean;
 }
 
@@ -31,6 +32,7 @@ export function QuestionView({
   onSubmitAnswer,
   isSubmitting,
 }: QuestionViewProps) {
+  const [inputMode, setInputMode] = useState<"text" | "voice">("text");
   const [showWhyAsked, setShowWhyAsked] = useState(false);
 
   const isTechnical = question.type === "technical";
@@ -41,6 +43,18 @@ export function QuestionView({
     defaultValues: { answerText: "" },
   });
 
+  const { listening, supported, toggle, stop } = useSpeech(
+    (transcript) => {
+      form.setValue("answerText", transcript, {
+        shouldValidate: true,
+        shouldDirty: true,
+        shouldTouch: true,
+      });
+      setInputMode("voice");
+    },
+    { lang: "en-IN", continuous: true, interimResults: true }
+  );
+
   const answerText = useWatch({
     control: form.control,
     name: "answerText",
@@ -50,7 +64,10 @@ export function QuestionView({
   const charCount = answerText.trim().length;
 
   async function onSubmit(values: AnswerFormValues) {
-    await onSubmitAnswer(values.answerText);
+    if (listening) {
+      stop();
+    }
+    await onSubmitAnswer(values.answerText, inputMode);
   }
 
   return (
@@ -112,21 +129,70 @@ export function QuestionView({
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <Field className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label htmlFor="answerText" className="text-xs font-semibold text-foreground">
-                Your Answer
-              </label>
-              <span className="text-xs text-muted-foreground">
-                {charCount} / {MIN_ANSWER_LENGTH} min chars
-              </span>
+              <div className="flex items-center gap-2">
+                <label htmlFor="answerText" className="text-xs font-semibold text-foreground">
+                  Your Answer
+                </label>
+                {inputMode === "voice" && (
+                  <Badge variant="secondary" className="text-[10px] font-medium py-0 px-1.5">
+                    Voice Dictated
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                {/* Voice Input Action Button (Hidden when Web Speech is unsupported) */}
+                {supported && (
+                  <Button
+                    type="button"
+                    variant={listening ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={toggle}
+                    disabled={isSubmitting}
+                    className={cn(
+                      "h-7 gap-1.5 px-2.5 text-xs transition-all",
+                      listening && "animate-pulse ring-2 ring-destructive/40"
+                    )}
+                  >
+                    {listening ? (
+                      <>
+                        <span className="size-2 rounded-full bg-white animate-ping" />
+                        <MicOff className="size-3.5" />
+                        <span>Stop Voice</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mic className="size-3.5 text-primary" />
+                        <span>Voice Input</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {charCount} / {MIN_ANSWER_LENGTH} min chars
+                </span>
+              </div>
             </div>
+
+            {/* Active Listening Status Banner */}
+            {listening && (
+              <div className="flex items-center gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-1.5 text-xs font-medium text-destructive">
+                <span className="size-2 rounded-full bg-destructive animate-pulse" />
+                <span>Listening actively... Speak your response clearly.</span>
+              </div>
+            )}
+
             <textarea
               id="answerText"
               rows={6}
               {...form.register("answerText")}
-              placeholder="Type your response here. Include specific details, metrics, and technologies..."
+              placeholder="Type or speak your response here. Include specific details, metrics, and technologies..."
               disabled={isSubmitting}
               aria-invalid={Boolean(form.formState.errors.answerText)}
-              className="flex min-h-35 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50"
+              className={cn(
+                "flex min-h-35 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+                listening && "border-destructive/50 ring-1 ring-destructive/30"
+              )}
             />
             {form.formState.errors.answerText && (
               <FieldError>{form.formState.errors.answerText.message}</FieldError>
