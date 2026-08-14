@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { extractionModel } from "@/lib/ai";
 import { db } from "@/lib/db";

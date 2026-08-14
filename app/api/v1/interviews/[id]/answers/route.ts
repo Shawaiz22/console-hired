@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth-helpers";
+import { and, eq } from "drizzle-orm";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
-import { interviewAnswers } from "@/lib/db/schema";
+import { interviewAnswers, interviewSessions } from "@/lib/db/schema";
 import fixtureSession from "@/modules/interview/fixtures/interview.json";
 
 export const runtime = "nodejs";
@@ -15,12 +16,20 @@ const AnswerInputSchema = z.object({
 });
 
 export async function POST(req: Request, { params }: { params: Params }) {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id: sessionId } = await params;
+
+  // Ownership: never write an answer into a session the caller does not own
+  const session = await db.query.interviewSessions.findFirst({
+    where: and(eq(interviewSessions.id, sessionId), eq(interviewSessions.userId, user.id)),
+  });
+  if (!session) {
+    return NextResponse.json({ error: "Interview session not found" }, { status: 404 });
+  }
 
   try {
     const body = await req.json();
