@@ -9,7 +9,8 @@ export interface ActivityItem {
   id: string;
   type: "analysis" | "interview";
   title: string;
-  score: number;
+  /** null while the analysis or session has not been scored yet. */
+  score: number | null;
   createdAt: string | Date;
   href: string;
 }
@@ -72,7 +73,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
 
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="font-mono text-xs">
-                  {item.score}% Score
+                  {item.score === null ? "Pending" : `${item.score}% Score`}
                 </Badge>
                 <ArrowRight className="size-4 text-muted-foreground/60" />
               </div>

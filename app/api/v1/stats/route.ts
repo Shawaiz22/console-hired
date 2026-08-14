@@ -1,94 +1,177 @@
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { requireUser } from "@/lib/auth-helpers";
+import { and, asc, count, desc, eq, max } from "drizzle-orm";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
-import { analyses, interviewSessions } from "@/lib/db/schema";
-import fixtureAnalysis from "@/modules/analysis/fixtures/analysis.json";
+import { analyses, interviewSessions, jobDescriptions, resumes } from "@/lib/db/schema";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const user = await requireUser();
-  if (!user?.id) {
+  const user = await requireApiUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const userAnalyses = await db.query.analyses.findMany({
-      where: eq(analyses.userId, user.id),
-      orderBy: (table, { desc }) => [desc(table.createdAt)],
-    });
+    // Run count queries and max queries concurrently for maximum performance
+    const [
+      resumeCountRes,
+      analysisCountRes,
+      interviewCountRes,
+      bestAnalysisScoreRes,
+      bestInterviewScoreRes,
+      recentAnalysesRaw,
+      recentSessionsRaw,
+      completedAnalyses,
+      completedInterviews,
+    ] = await Promise.all([
+      db.select({ count: count() }).from(resumes).where(eq(resumes.userId, user.id)),
 
-    const userInterviews = await db.query.interviewSessions.findMany({
-      where: eq(interviewSessions.userId, user.id),
-      orderBy: (table, { desc }) => [desc(table.createdAt)],
-    });
+      db.select({ count: count() }).from(analyses).where(eq(analyses.userId, user.id)),
 
-    const resumesAnalyzed = userAnalyses.length;
-    const completedInterviews = userInterviews.filter((i) => i.status === "completed");
-    const interviewsCompleted = completedInterviews.length;
+      db
+        .select({ count: count() })
+        .from(interviewSessions)
+        .where(eq(interviewSessions.userId, user.id)),
 
-    const analysisScores = userAnalyses
-      .map((a) => a.overallScore)
-      .filter((s): s is number => typeof s === "number");
-    const bestMatchScore = analysisScores.length > 0 ? Math.max(...analysisScores) : 0;
+      db
+        .select({ maxScore: max(analyses.overallScore) })
+        .from(analyses)
+        .where(and(eq(analyses.userId, user.id), eq(analyses.status, "complete"))),
 
-    const interviewScores = completedInterviews
-      .map((i) => i.overallScore)
-      .filter((s): s is number => typeof s === "number");
-    const avgInterviewScore =
-      interviewScores.length > 0
-        ? Math.round(interviewScores.reduce((a, b) => a + b, 0) / interviewScores.length)
-        : 0;
+      db
+        .select({ maxScore: max(interviewSessions.overallScore) })
+        .from(interviewSessions)
+        .where(eq(interviewSessions.userId, user.id)),
 
-    // Combine recent activity (top 5)
-    const combinedActivity = [
-      ...userAnalyses.map((a) => ({
-        id: a.id,
-        type: "analysis" as const,
-        title: "Resume Analysis",
-        score: a.overallScore ?? fixtureAnalysis.overallScore,
-        createdAt: a.createdAt,
-        href: `/dashboard/analysis/${a.id}`,
-      })),
-      ...userInterviews.map((i) => ({
-        id: i.id,
-        type: "interview" as const,
-        title: "Mock Interview Session",
-        score: i.overallScore ?? 84,
-        createdAt: i.createdAt,
-        href: `/dashboard/interview/${i.id}`,
-      })),
-    ]
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-      .slice(0, 5);
+      // Last 5 analyses with explicit columns only
+      db
+        .select({
+          id: analyses.id,
+          overallScore: analyses.overallScore,
+          jobTitle: jobDescriptions.title,
+          createdAt: analyses.createdAt,
+        })
+        .from(analyses)
+        .leftJoin(jobDescriptions, eq(analyses.jobDescriptionId, jobDescriptions.id))
+        .where(eq(analyses.userId, user.id))
+        .orderBy(desc(analyses.createdAt))
+        .limit(5),
 
-    // Trend data points for progress chart
-    const trendData = [
+      // Last 5 interview sessions with explicit columns only
+      db
+        .select({
+          id: interviewSessions.id,
+          overallScore: interviewSessions.overallScore,
+          jobTitle: jobDescriptions.title,
+          startedAt: interviewSessions.createdAt,
+        })
+        .from(interviewSessions)
+        .leftJoin(jobDescriptions, eq(interviewSessions.jobDescriptionId, jobDescriptions.id))
+        .where(eq(interviewSessions.userId, user.id))
+        .orderBy(desc(interviewSessions.createdAt))
+        .limit(5),
+
+      // Historical analysis scores for the timeline chart
+      db
+        .select({
+          overallScore: analyses.overallScore,
+          createdAt: analyses.createdAt,
+        })
+        .from(analyses)
+        .where(and(eq(analyses.userId, user.id), eq(analyses.status, "complete")))
+        .orderBy(asc(analyses.createdAt))
+        .limit(20),
+
+      // Historical interview scores for the timeline chart
+      db
+        .select({
+          overallScore: interviewSessions.overallScore,
+          createdAt: interviewSessions.createdAt,
+        })
+        .from(interviewSessions)
+        .where(
+          and(eq(interviewSessions.userId, user.id), eq(interviewSessions.status, "completed"))
+        )
+        .orderBy(asc(interviewSessions.createdAt))
+        .limit(20),
+    ]);
+
+    const resumeCount = resumeCountRes[0]?.count ?? 0;
+    const analysisCount = analysisCountRes[0]?.count ?? 0;
+    const interviewCount = interviewCountRes[0]?.count ?? 0;
+
+    const maxAnalysisScore = bestAnalysisScoreRes[0]?.maxScore ?? null;
+    const maxInterviewScore = bestInterviewScoreRes[0]?.maxScore ?? null;
+    const bestScore =
+      maxAnalysisScore !== null && maxInterviewScore !== null
+        ? Math.max(maxAnalysisScore, maxInterviewScore)
+        : (maxAnalysisScore ?? maxInterviewScore);
+
+    const recentAnalyses = recentAnalysesRaw.map((item) => ({
+      id: item.id,
+      overallScore: item.overallScore,
+      jobTitle: item.jobTitle ?? "Untitled Position",
+      createdAt: item.createdAt,
+    }));
+
+    const recentSessions = recentSessionsRaw.map((item) => ({
+      id: item.id,
+      overallScore: item.overallScore,
+      jobTitle: item.jobTitle ?? "Untitled Position",
+      startedAt: item.startedAt,
+    }));
+
+    // Aggregate historical scores grouped by date for dashboard timeline chart
+    const historyMap = new Map<
+      string,
+      { date: string; matchScore: number | null; interviewScore: number | null }
+    >();
+
+    for (const a of completedAnalyses) {
+      if (a.createdAt && a.overallScore !== null) {
+        const dateKey = a.createdAt.toISOString().split("T")[0];
+        const existing = historyMap.get(dateKey) ?? {
+          date: dateKey,
+          matchScore: null,
+          interviewScore: null,
+        };
+        existing.matchScore = a.overallScore;
+        historyMap.set(dateKey, existing);
+      }
+    }
+
+    for (const i of completedInterviews) {
+      if (i.createdAt && i.overallScore !== null) {
+        const dateKey = i.createdAt.toISOString().split("T")[0];
+        const existing = historyMap.get(dateKey) ?? {
+          date: dateKey,
+          matchScore: null,
+          interviewScore: null,
+        };
+        existing.interviewScore = i.overallScore;
+        historyMap.set(dateKey, existing);
+      }
+    }
+
+    const scoreHistory = Array.from(historyMap.values()).sort((a, b) =>
+      a.date.localeCompare(b.date)
+    );
+
+    return NextResponse.json(
       {
-        date: "Session 1",
-        matchScore: bestMatchScore || fixtureAnalysis.overallScore,
-        interviewScore: avgInterviewScore || 80,
+        resumeCount,
+        analysisCount,
+        interviewCount,
+        bestScore,
+        recentAnalyses,
+        recentSessions,
+        scoreHistory,
       },
-      {
-        date: "Session 2",
-        matchScore: (bestMatchScore || fixtureAnalysis.overallScore) + 5,
-        interviewScore: (avgInterviewScore || 80) + 4,
-      },
-    ];
-
-    return NextResponse.json({
-      stats: {
-        resumesAnalyzed,
-        interviewsCompleted,
-        bestMatchScore: bestMatchScore || fixtureAnalysis.overallScore,
-        avgInterviewScore: avgInterviewScore || 84,
-      },
-      recentActivity: combinedActivity,
-      trendData: resumesAnalyzed + interviewsCompleted >= 2 ? trendData : [],
-    });
-  } catch (err) {
-    console.error("[get-stats]", err);
-    return NextResponse.json({ error: "Could not fetch stats" }, { status: 500 });
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("[stats-endpoint]", error);
+    return NextResponse.json({ error: "Failed to fetch stats" }, { status: 500 });
   }
 }

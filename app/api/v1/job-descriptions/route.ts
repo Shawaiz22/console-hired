@@ -1,9 +1,11 @@
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
-import { requireUser } from "@/lib/auth-helpers";
+import { requireApiUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { jobDescriptions } from "@/lib/db/schema";
+import { MAX_UPLOAD_BYTES } from "@/modules/resume/schemas/resume.schema";
 import { extractText, ExtractionError } from "@/modules/resume/utils/extract";
 import { parseJD } from "@/modules/resume/utils/parse-jd";
 
@@ -16,8 +18,25 @@ const JDInputSchema = z.object({
   company: z.string().optional(),
 });
 
+export async function GET() {
+  const user = await requireApiUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const userJDs = await db.query.jobDescriptions.findMany({
+    where: eq(jobDescriptions.userId, user.id),
+    orderBy: (jdsTable, { desc }) => [desc(jdsTable.createdAt)],
+  });
+
+  return NextResponse.json({ jobDescriptions: userJDs });
+}
+
 export async function POST(req: Request) {
-  const user = await requireUser();
+  const user = await requireApiUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const contentType = req.headers.get("content-type") || "";
 
@@ -39,7 +58,7 @@ export async function POST(req: Request) {
         }
         rawText = formText;
       } else {
-        if (file.size > 5 * 1024 * 1024) {
+        if (file.size > MAX_UPLOAD_BYTES) {
           return NextResponse.json({ error: "File must be under 5MB" }, { status: 400 });
         }
         rawText = await extractText(file);

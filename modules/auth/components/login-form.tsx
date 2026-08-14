@@ -67,6 +67,12 @@ export function LoginForm() {
           Sign up
         </Link>
       </p>
+      <p className="mt-2 text-center text-sm text-muted-foreground">
+        Registered but didn&apos;t verify?{" "}
+        <Link href="/verify" className="text-primary underline-offset-4 hover:underline">
+          Enter your code
+        </Link>
+      </p>
     </>
   );
 }

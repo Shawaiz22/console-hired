@@ -83,7 +83,7 @@ export function HistoryList({ items }: HistoryListProps) {
                       <td className="p-3.5 text-xs text-muted-foreground">{dateStr}</td>
                       <td className="p-3.5">
                         <Badge variant="outline" className="font-mono text-xs">
-                          {item.score}%
+                          {item.score === null ? "Pending" : `${item.score}%`}
                         </Badge>
                       </td>
                       <td className="p-3.5 text-right">
@@ -131,7 +131,7 @@ export function HistoryList({ items }: HistoryListProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="font-mono text-xs">
-                      {item.score}%
+                      {item.score === null ? "Pending" : `${item.score}%`}
                     </Badge>
                     <ArrowRight className="size-4 text-muted-foreground" />
                   </div>

@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ResumeUploadSchema, type ResumeUploadValues } from "../schemas/resume.schema";
 import { FileDropzone } from "./file-dropzone";
 
 interface UploadFormProps {
@@ -10,20 +13,20 @@ interface UploadFormProps {
 }
 
 export function UploadForm({ onSuccess }: UploadFormProps) {
-  const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!file) return;
+  const form = useForm<ResumeUploadValues>({
+    resolver: zodResolver(ResumeUploadSchema),
+  });
 
-    setIsUploading(true);
-    setError(null);
+  const isUploading = form.formState.isSubmitting;
+
+  async function onSubmit(values: ResumeUploadValues) {
+    setServerError(null);
 
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", values.file);
 
       const res = await fetch("/api/v1/resumes", {
         method: "POST",
@@ -33,24 +36,24 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Failed to upload file");
-        toast.error(data.error || "Failed to upload file");
-        setIsUploading(false);
+        // Show server error (e.g. 422 NO_TEXT_LAYER) verbatim
+        const message = data.error || "Failed to upload file";
+        setServerError(message);
+        toast.error(message);
         return;
       }
 
       toast.success("Resume uploaded and text extracted successfully!");
       onSuccess(data.resume);
     } catch {
-      const msg = "An error occurred while uploading. Please try again.";
-      setError(msg);
-      toast.error(msg);
-      setIsUploading(false);
+      const message = "An error occurred while uploading. Please try again.";
+      setServerError(message);
+      toast.error(message);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" noValidate>
       <div>
         <h2 className="text-lg font-semibold">Step 1: Upload your resume</h2>
         <p className="text-sm text-muted-foreground">
@@ -58,14 +61,20 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
         </p>
       </div>
 
-      <FileDropzone
-        selectedFile={file}
-        onFileSelect={setFile}
-        error={error}
-        disabled={isUploading}
+      <Controller
+        control={form.control}
+        name="file"
+        render={({ field, fieldState }) => (
+          <FileDropzone
+            selectedFile={field.value ?? null}
+            onFileSelect={(file) => field.onChange(file ?? undefined)}
+            error={fieldState.error?.message ?? serverError}
+            disabled={isUploading}
+          />
+        )}
       />
 
-      <Button type="submit" className="w-full" disabled={!file || isUploading}>
+      <Button type="submit" className="w-full" disabled={isUploading}>
         {isUploading ? "Uploading & Extracting..." : "Continue to Job Description"}
       </Button>
     </form>

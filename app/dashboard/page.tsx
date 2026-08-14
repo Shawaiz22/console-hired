@@ -4,10 +4,9 @@ import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { analyses, interviewSessions } from "@/lib/db/schema";
 import { Button } from "@/components/ui/button";
-import { ProgressChart } from "@/modules/dashboard/components/progress-chart";
+import { ProgressChart, type ChartDataPoint } from "@/modules/dashboard/components/progress-chart";
 import { RecentActivity } from "@/modules/dashboard/components/recent-activity";
 import { StatsOverview } from "@/modules/dashboard/components/stats-overview";
-import fixtureAnalysis from "@/modules/analysis/fixtures/analysis.json";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -45,7 +44,7 @@ export default async function DashboardPage() {
       id: a.id,
       type: "analysis" as const,
       title: "Resume Analysis",
-      score: a.overallScore ?? fixtureAnalysis.overallScore,
+      score: a.overallScore,
       createdAt: a.createdAt,
       href: `/dashboard/analysis/${a.id}`,
     })),
@@ -53,7 +52,7 @@ export default async function DashboardPage() {
       id: i.id,
       type: "interview" as const,
       title: "Mock Interview Session",
-      score: i.overallScore ?? 84,
+      score: i.overallScore,
       createdAt: i.createdAt,
       href: `/dashboard/interview/${i.id}`,
     })),
@@ -61,22 +60,33 @@ export default async function DashboardPage() {
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     .slice(0, 5);
 
-  const totalPoints = resumesAnalyzed + interviewsCompleted;
-  const trendData =
-    totalPoints >= 2
-      ? [
-          {
-            date: "Session 1",
-            matchScore: bestMatchScore || fixtureAnalysis.overallScore,
-            interviewScore: avgInterviewScore || 80,
-          },
-          {
-            date: "Session 2",
-            matchScore: (bestMatchScore || fixtureAnalysis.overallScore) + 5,
-            interviewScore: (avgInterviewScore || 80) + 4,
-          },
-        ]
-      : [];
+  // Real score history keyed by the day each score was recorded. Days without a
+  // score stay null so the chart gaps instead of showing invented progress.
+  const historyByDate = new Map<string, ChartDataPoint>();
+
+  function pointFor(date: Date) {
+    const key = date.toISOString().split("T")[0];
+    const existing = historyByDate.get(key);
+    if (existing) return existing;
+
+    const created: ChartDataPoint = { date: key, matchScore: null, interviewScore: null };
+    historyByDate.set(key, created);
+    return created;
+  }
+
+  for (const a of userAnalyses) {
+    if (a.createdAt && a.overallScore !== null) {
+      pointFor(a.createdAt).matchScore = a.overallScore;
+    }
+  }
+
+  for (const i of completedInterviews) {
+    if (i.createdAt && i.overallScore !== null) {
+      pointFor(i.createdAt).interviewScore = i.overallScore;
+    }
+  }
+
+  const trendData = Array.from(historyByDate.values()).sort((a, b) => a.date.localeCompare(b.date));
 
   return (
     <div className="flex flex-col gap-8">

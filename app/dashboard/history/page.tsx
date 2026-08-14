@@ -3,7 +3,6 @@ import { requireUser } from "@/lib/auth-helpers";
 import { db } from "@/lib/db";
 import { analyses, interviewSessions } from "@/lib/db/schema";
 import { HistoryList } from "@/modules/dashboard/components/history-list";
-import fixtureAnalysis from "@/modules/analysis/fixtures/analysis.json";
 
 export default async function HistoryPage() {
   const user = await requireUser();
@@ -23,7 +22,7 @@ export default async function HistoryPage() {
       id: a.id,
       type: "analysis" as const,
       title: "Resume Analysis",
-      score: a.overallScore ?? fixtureAnalysis.overallScore,
+      score: a.overallScore,
       createdAt: a.createdAt,
       href: `/dashboard/analysis/${a.id}`,
     })),
@@ -31,7 +30,7 @@ export default async function HistoryPage() {
       id: i.id,
       type: "interview" as const,
       title: "Mock Interview Session",
-      score: i.overallScore ?? 84,
+      score: i.overallScore,
       createdAt: i.createdAt,
       href: `/dashboard/interview/${i.id}`,
     })),

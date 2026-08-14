@@ -14,8 +14,9 @@ import { EmptyState } from "./empty-state";
 
 export interface ChartDataPoint {
   date: string;
-  matchScore: number;
-  interviewScore: number;
+  /** null when no score was recorded on that date — the line is gapped, not interpolated. */
+  matchScore: number | null;
+  interviewScore: number | null;
 }
 
 interface ProgressChartProps {
@@ -66,6 +67,7 @@ export function ProgressChart({ data }: ProgressChartProps) {
                 stroke="#10b981"
                 strokeWidth={2}
                 dot={{ r: 4 }}
+                connectNulls
               />
               <Line
                 type="monotone"
@@ -74,6 +76,7 @@ export function ProgressChart({ data }: ProgressChartProps) {
                 stroke="#3b82f6"
                 strokeWidth={2}
                 dot={{ r: 4 }}
+                connectNulls
               />
             </LineChart>
           </ResponsiveContainer>
