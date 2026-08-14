@@ -23,10 +23,11 @@ export async function parseJD(jdId: string) {
     return;
   }
 
-  const { object } = await generateObject({
-    model: extractionModel,
-    schema: ParsedJDSchema,
-    prompt: `Extract structured information from this job description.
+  try {
+    const { object } = await generateObject({
+      model: extractionModel,
+      schema: ParsedJDSchema,
+      prompt: `Extract structured information from this job description.
 
 Rules:
 - Separate requiredSkills from niceToHaveSkills carefully. "Must have", "required", "strong experience with" go to requiredSkills. "Bonus", "nice to have", "a plus", "preferred" go to niceToHaveSkills.
@@ -37,7 +38,11 @@ Rules:
 
 Job Description:
 ${jd.rawText}`,
-  });
+    });
 
-  await db.update(jobDescriptions).set({ parsed: object }).where(eq(jobDescriptions.id, jdId));
+    await db.update(jobDescriptions).set({ parsed: object }).where(eq(jobDescriptions.id, jdId));
+  } catch (err) {
+    console.error(`[parseJD:error] Failed to parse Job Description ID ${jdId}:`, err);
+    throw err;
+  }
 }
