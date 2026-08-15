@@ -126,7 +126,7 @@ decision came down to structured-output reliability, latency, and cost at hackat
 | Dedicated resume-parsing APIs (e.g. Affinda, Sovren) | Rejected — accurate on resumes but cannot score against an arbitrary JD or grade interview answers, so we would still need an LLM alongside |
 | Embeddings + cosine similarity only                  | Rejected — yields a similarity number but cannot name _which_ skill is missing or _why_, which is the core requirement                      |
 | OpenAI GPT-4o                                        | Strong, but slower and more expensive per call than we needed for six-question grading loops                                                |
-| **Google Gemini + Groq Llama (chosen)**              | Best fit combining high-accuracy document parsing with ultra-fast grading inference                                                         |
+| **Google Gemini + Groq (chosen)**                    | Best fit combining high-accuracy document parsing with ultra-fast grading inference                                                         |
 
 **Google Gemini 3.5 Flash** — `@ai-sdk/google`, configured as `extractionModel` in [`lib/ai.ts`](lib/ai.ts) for document parsing, resume extraction, and job description understanding. Chosen for high reasoning precision, broad context windows, and robust JSON schema generation.
 
@@ -311,8 +311,9 @@ after a quiet period is slower while the database wakes.
 
 ## Future Scope
 
-- **Semantic skill matching** — `gemini-embedding-001` is configured; moving skill matching from
-  synonym lists to embeddings would catch equivalences no keyword list anticipates.
+- **Tuned similarity thresholds** — skill matching already falls back to `gemini-embedding-001`
+  cosine similarity at 0.75, and evidence mapping classifies at 0.70/0.55. Those cut-offs are
+  uniform today; calibrating them per industry would reduce false negatives in non-technical roles.
 - **Resume rewriter** — generate a full revised resume, not just per-bullet suggestions.
 - **Industry-specific question banks** — tailor questions by domain rather than role alone.
 - **Shareable feedback reports** — a signed public link a mentor or recruiter can review.
