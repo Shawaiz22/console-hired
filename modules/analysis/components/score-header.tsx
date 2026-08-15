@@ -7,6 +7,13 @@ interface ScoreHeaderProps {
   breakdown: ScoreBreakdown;
 }
 
+function getBarBgColor(value: number): string {
+  if (value >= 75) return "bg-emerald-500";
+  if (value >= 50) return "bg-blue-500";
+  if (value >= 35) return "bg-amber-500";
+  return "bg-rose-500";
+}
+
 export function ScoreHeader({ score, breakdown }: ScoreHeaderProps) {
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
@@ -86,7 +93,7 @@ export function ScoreHeader({ score, breakdown }: ScoreHeaderProps) {
                     <div
                       className={cn(
                         "h-full transition-all duration-500",
-                        strokeColor.replace("stroke-", "bg-")
+                        getBarBgColor(item.value)
                       )}
                       style={{ width: `${item.value}%` }}
                     />
