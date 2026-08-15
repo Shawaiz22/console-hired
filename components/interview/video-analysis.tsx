@@ -8,17 +8,17 @@ import { cn } from "@/lib/utils";
 
 interface VideoAnalysisProps {
   enabled?: boolean;
+  compact?: boolean;
   className?: string;
 }
 
-export function VideoAnalysis({ enabled = true, className }: VideoAnalysisProps) {
+export function VideoAnalysis({ enabled = true, compact = false, className }: VideoAnalysisProps) {
   const { videoRef, cameraActive, permissionError, analysis, startCamera } =
     useVideoAnalysis(enabled);
 
   return (
     <Card className={cn("overflow-hidden border border-border bg-card shadow-sm", className)}>
-      <CardContent className="p-4 space-y-4">
-        {/* Video Preview Container */}
+      <CardContent className={cn(compact ? "p-2.5 space-y-2.5" : "p-4 space-y-4")}>
         <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-slate-950 flex items-center justify-center">
           <video
             ref={videoRef}
@@ -49,7 +49,6 @@ export function VideoAnalysis({ enabled = true, className }: VideoAnalysisProps)
             </div>
           )}
 
-          {/* Top Overlay Badges */}
           {cameraActive && (
             <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2 pointer-events-none">
               <Badge
@@ -78,7 +77,6 @@ export function VideoAnalysis({ enabled = true, className }: VideoAnalysisProps)
             </div>
           )}
 
-          {/* Floating Live Warning Banner */}
           {cameraActive && analysis.warningMessage && (
             <div className="absolute bottom-3 left-3 right-3 rounded-md bg-amber-500/90 backdrop-blur-md p-2 text-center text-xs font-medium text-white shadow-md animate-fade-in flex items-center justify-center gap-1.5">
               <AlertCircle className="size-3.5 shrink-0" />
@@ -87,9 +85,13 @@ export function VideoAnalysis({ enabled = true, className }: VideoAnalysisProps)
           )}
         </div>
 
-        {/* Live Visual Indicators & Real-Time Status Chips */}
         {cameraActive && (
-          <div className="grid grid-cols-3 gap-2 text-center pt-1">
+          <div
+            className={cn(
+              "grid grid-cols-3 text-center",
+              compact ? "gap-1.5 pt-0.5" : "gap-2 pt-1"
+            )}
+          >
             <div className="rounded-md border border-border/60 bg-muted/30 p-2 space-y-1">
               <span className="text-[10px] uppercase font-semibold text-muted-foreground block">
                 Posture

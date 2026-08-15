@@ -198,21 +198,25 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 py-6">
+    <div className="mx-auto max-w-7xl w-full min-h-[calc(100vh-7.5rem)] lg:h-[calc(100vh-7.5rem)] overflow-y-auto lg:overflow-hidden p-1 sm:p-2">
       {error && (
-        <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>
+        <div className="rounded-md bg-destructive/15 p-2 text-xs text-destructive shrink-0 mb-2">
+          {error}
+        </div>
       )}
 
-      <div className="grid gap-6 md:grid-cols-12 items-start">
-        <div className="md:col-span-7">
-          {activeEvaluation ? (
-            <FeedbackCard
-              evaluation={activeEvaluation}
-              onNextQuestion={handleNextQuestion}
-              isLastQuestion={currentQuestionIndex === session.questions.length - 1}
-              inputMode={activeInputMode}
-            />
-          ) : (
+      {activeEvaluation ? (
+        <div className="mx-auto max-w-3xl w-full overflow-y-auto max-h-full py-2">
+          <FeedbackCard
+            evaluation={activeEvaluation}
+            onNextQuestion={handleNextQuestion}
+            isLastQuestion={currentQuestionIndex === session.questions.length - 1}
+            inputMode={activeInputMode}
+          />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch lg:h-full lg:max-h-full">
+          <div className="lg:col-span-7 min-h-[480px] lg:h-full lg:max-h-full flex flex-col overflow-hidden">
             <QuestionView
               key={currentQuestion.id}
               question={currentQuestion}
@@ -221,13 +225,15 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
               onSubmitAnswer={handleAnswerSubmit}
               isSubmitting={isSubmitting}
             />
-          )}
-        </div>
+          </div>
 
-        <div className="md:col-span-5">
-          <VideoAnalysis />
+          <div className="lg:col-span-5 lg:h-full lg:max-h-full flex flex-col justify-center">
+            <div className="w-full h-full max-h-full rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-3 shadow-xl backdrop-blur-xl flex flex-col justify-center overflow-hidden">
+              <VideoAnalysis compact={false} />
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
