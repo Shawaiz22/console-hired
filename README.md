@@ -78,11 +78,11 @@ detect multi-column layouts, contact details stranded in margins, non-standard s
 and text density — the formatting choices that quietly cause rejection.
 
 **4. Interview on the evidence.** Six questions (four technical, two behavioural) are generated
-from _this_ resume against _this_ job description, each carrying a `whyAsked` rationale. Answers
-are graded on clarity, relevance, completeness and specificity, with STAR-structure detection on
-behavioural answers, then synthesised into an overall performance summary.
+from _this_ resume against _this_ job description, each carrying a `whyAsked` rationale. Candidates can respond via text or continuous voice input (speech-to-text) with built-in voice audio playback (text-to-speech feedback). Answers are graded on clarity, relevance, completeness and specificity, with STAR-structure detection on behavioural answers. Upon completing all questions, candidates experience an interactive multi-stage score calculation loading screen before revealing the full session performance summary.
 
-**5. Track progress honestly.** The dashboard charts real scores against the dates they were
+**5. Live Webcam & Vision AI Analysis.** During mock interviews, an integrated live webcam feed powered by MediaPipe Face Landmarker (`@mediapipe/tasks-vision`) tracks posture, eye contact, and head orientation in real time — providing instant visual feedback, presence scoring, and live posture alignment alerts directly in the browser without storing video recordings.
+
+**6. Track progress honestly.** The dashboard charts real scores against the dates they were
 recorded. Where there is no data, the chart shows a gap and the UI says so — nothing is
 interpolated or invented.
 
@@ -101,19 +101,20 @@ interpolated or invented.
 
 ## Technology Stack
 
-| Layer        | Choice                               | Why                                                                      |
-| ------------ | ------------------------------------ | ------------------------------------------------------------------------ |
-| Framework    | Next.js 16 (App Router), React 19    | One deploy target; server components remove a network hop for data reads |
-| Language     | TypeScript (strict)                  | Shared types across the client/server boundary                           |
-| Styling      | Tailwind CSS 4, shadcn/ui on Base UI | Accessible primitives without shipping a heavy component runtime         |
-| Database     | Neon serverless Postgres             | Relational integrity with cascade deletes; scales to zero between demos  |
-| ORM          | Drizzle ORM + drizzle-zod            | SQL-shaped, fully typed, schema and validators derived from one source   |
-| Auth         | NextAuth v5 (Auth.js)                | Credentials + Google in one place; httpOnly encrypted session cookie     |
-| AI SDK       | Vercel AI SDK (`ai`)                 | One `generateObject` interface; swap providers without rewriting callers |
-| File parsing | unpdf (PDF), mammoth (DOCX)          | unpdf runs serverless with no native binaries and exposes text geometry  |
-| Forms        | React Hook Form + Zod                | The same schema validates the form and the API route it posts to         |
-| Testing      | Jest + Testing Library               | Fast route-handler and unit coverage                                     |
-| Tooling      | ESLint, Prettier, Husky, lint-staged | Every commit is formatted, linted and tested before it lands             |
+| Layer        | Choice                                | Why                                                                             |
+| ------------ | ------------------------------------- | ------------------------------------------------------------------------------- |
+| Framework    | Next.js 16 (App Router), React 19     | One deploy target; server components remove a network hop for data reads        |
+| Language     | TypeScript (strict)                   | Shared types across the client/server boundary                                  |
+| Styling      | Tailwind CSS 4, shadcn/ui on Base UI  | Accessible primitives without shipping a heavy component runtime                |
+| Database     | Neon serverless Postgres              | Relational integrity with cascade deletes; scales to zero between demos         |
+| ORM          | Drizzle ORM + drizzle-zod             | SQL-shaped, fully typed, schema and validators derived from one source          |
+| Auth         | NextAuth v5 (Auth.js)                 | Credentials + Google in one place; httpOnly encrypted session cookie            |
+| AI SDK       | Vercel AI SDK (`ai`)                  | One `generateObject` interface; swap providers without rewriting callers        |
+| Vision AI    | MediaPipe (`@mediapipe/tasks-vision`) | Real-time client-side face landmarking, eye contact tracking & posture analysis |
+| File parsing | unpdf (PDF), mammoth (DOCX)           | unpdf runs serverless with no native binaries and exposes text geometry         |
+| Forms        | React Hook Form + Zod                 | The same schema validates the form and the API route it posts to                |
+| Testing      | Jest + Testing Library                | Fast route-handler and unit coverage                                            |
+| Tooling      | ESLint, Prettier, Husky, lint-staged  | Every commit is formatted, linted and tested before it lands                    |
 
 ## Third-Party AI Services — What We Used and Why
 
@@ -125,20 +126,16 @@ decision came down to structured-output reliability, latency, and cost at hackat
 | Dedicated resume-parsing APIs (e.g. Affinda, Sovren) | Rejected — accurate on resumes but cannot score against an arbitrary JD or grade interview answers, so we would still need an LLM alongside |
 | Embeddings + cosine similarity only                  | Rejected — yields a similarity number but cannot name _which_ skill is missing or _why_, which is the core requirement                      |
 | OpenAI GPT-4o                                        | Strong, but slower and more expensive per call than we needed for six-question grading loops                                                |
-| **Google Gemini + Groq Llama (chosen)**              | Best fit for the two distinct jobs below                                                                                                    |
+| **Google Gemini + Groq Llama (chosen)**              | Best fit combining high-accuracy document parsing with ultra-fast grading inference                                                         |
 
-**Google Gemini 2.5 Flash** — `@ai-sdk/google`, used for document understanding: resume parsing,
-JD parsing, interview question generation, and session summaries. Chosen for a large context
-window (a full resume plus JD fits comfortably), strong adherence to JSON schemas via
-`generateObject`, and a free tier sufficient for the hackathon.
+**Google Gemini 3.5 Flash** — `@ai-sdk/google`, configured as `extractionModel` in [`lib/ai.ts`](lib/ai.ts) for document parsing, resume extraction, and job description understanding. Chosen for high reasoning precision, broad context windows, and robust JSON schema generation.
 
-**Groq Llama 3.3 70B** — `@ai-sdk/groq`, used only for grading interview answers. Answer
-evaluation happens six times per session while the user waits, so latency dominates. Groq's
-inference speed makes grading feel immediate, and a 70B model is more than capable of applying a
-fixed rubric.
+**Groq (`openai/gpt-oss-120b`)** — `@ai-sdk/groq`, configured as `evaluationModel` in [`lib/ai.ts`](lib/ai.ts) for real-time interview answer evaluation, STAR framework grading, and overall session summary synthesis. Powered by Groq's LPUs for near-instant 6-question grading loops while the candidate waits.
+
+**Google Gemini (`gemini-embedding-001`)** — `@ai-sdk/google`, configured as `embeddingModel` in [`lib/ai.ts`](lib/ai.ts) for vector text embeddings to support semantic comparison.
 
 **How it is integrated.** Both models are declared once in [`lib/ai.ts`](lib/ai.ts) and consumed
-through the Vercel AI SDK's `generateObject`, always with a Zod schema — so a malformed model
+through Vercel AI SDK's `generateObject`, always with a Zod schema — so a malformed model
 response is a validation error, never corrupt data in the database. Prompts live beside their
 feature (`modules/interview/utils/prompts.ts`). If a call fails, the route returns `503` with a
 clear message; it never substitutes canned output for real AI feedback.
@@ -314,9 +311,7 @@ after a quiet period is slower while the database wakes.
 
 ## Future Scope
 
-- **Voice-based interviews** — speech-to-text answers with tone and pace analysis. The
-  `interview_answers.input_mode` and `delivery_metrics` columns already exist for this.
-- **Semantic skill matching** — `text-embedding-004` is configured; moving skill matching from
+- **Semantic skill matching** — `gemini-embedding-001` is configured; moving skill matching from
   synonym lists to embeddings would catch equivalences no keyword list anticipates.
 - **Resume rewriter** — generate a full revised resume, not just per-bullet suggestions.
 - **Industry-specific question banks** — tailor questions by domain rather than role alone.
