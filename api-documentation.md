@@ -354,13 +354,20 @@ first unanswered question.
 Submit one answer and receive a rubric-based evaluation.
 
 ```json
-{ "questionIndex": 0, "answerText": "At Acme I owned the migration of a 40-screen dashboard…" }
+{
+  "questionIndex": 0,
+  "answerText": "At Acme I owned the migration of a 40-screen dashboard…",
+  "inputMode": "voice",
+  "audio": { "base64": "GkXfo59Ch…", "durationMs": 42000 }
+}
 ```
 
-| Field           | Rules                            |
-| --------------- | -------------------------------- |
-| `questionIndex` | integer, 0–5                     |
-| `answerText`    | min 50 characters after trimming |
+| Field           | Rules                                                         |
+| --------------- | ------------------------------------------------------------- |
+| `questionIndex` | integer, 0–5                                                  |
+| `answerText`    | min 50 characters after trimming                              |
+| `inputMode`     | `"text"` or `"voice"`, defaults to `"text"`                   |
+| `audio`         | optional; base64 `audio/webm` of the same take, max ~4M chars |
 
 **`200 OK`**
 
@@ -382,12 +389,32 @@ Submit one answer and receive a rubric-based evaluation.
       },
       "strengths": ["Concrete architecture detail", "Quantified the outcome"],
       "improvements": ["Name the trade-offs you rejected"]
+    },
+    "deliveryMetrics": {
+      "wordsPerMinute": 142,
+      "wordCount": 99,
+      "durationSeconds": 42,
+      "fillerCount": 4,
+      "fillerRate": 4.0,
+      "analysis": {
+        "pace": 4,
+        "vocalVariation": 3,
+        "fluency": 4,
+        "articulation": 4,
+        "observations": ["Steady rhythm throughout", "A few restarts mid-sentence"]
+      }
     }
   }
 }
 ```
 
 Each dimension is scored 1–5. `star` is populated for behavioural answers and `null` otherwise.
+
+`deliveryMetrics` is `null` unless `audio` was sent. The five numbers are computed from the
+transcript and recording length, never asked of a model. `analysis` holds the only
+model-derived part — scored from the raw audio by Gemini, independently of the content
+grading — and is `null` when that call fails. A failed delivery analysis never fails the
+submission: the answer still saves and the content evaluation still returns.
 
 | Status | Meaning                                                         |
 | -----: | --------------------------------------------------------------- |

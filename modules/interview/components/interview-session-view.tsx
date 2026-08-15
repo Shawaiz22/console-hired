@@ -3,20 +3,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { VideoAnalysis } from "@/components/interview/video-analysis";
 import { CompletingSessionView } from "./completing-session-view";
+import { DeliveryCard } from "./delivery-card";
 import { FeedbackCard } from "./feedback-card";
 import { QuestionView } from "./question-view";
 import { SessionSummaryView } from "./session-summary";
 import { stopSpeaking } from "../utils/speak";
 import {
   type AnswerEvaluation,
+  type DeliveryMetrics,
   type InterviewQuestion,
   type SessionSummary,
 } from "../schemas/interview.schema";
+import { type CapturedAudio } from "../utils/use-audio-recorder";
 
 interface AnswerRecord {
   questionIndex: number;
   answerText: string;
   evaluation: AnswerEvaluation;
+  deliveryMetrics?: DeliveryMetrics | null;
 }
 
 interface SessionData {
@@ -36,6 +40,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [activeEvaluation, setActiveEvaluation] = useState<AnswerEvaluation | null>(null);
   const [activeInputMode, setActiveInputMode] = useState<"text" | "voice">("text");
+  const [activeDelivery, setActiveDelivery] = useState<DeliveryMetrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -78,7 +83,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   }, [id]);
 
   const handleAnswerSubmit = useCallback(
-    async (answerText: string, inputMode: "text" | "voice" = "text") => {
+    async (answerText: string, inputMode: "text" | "voice" = "text", audio?: CapturedAudio) => {
       stopSpeaking();
       setIsSubmitting(true);
       setError(null);
@@ -87,7 +92,12 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
         const res = await fetch(`/api/v1/interviews/${id}/answers`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ questionIndex: currentQuestionIndex, answerText, inputMode }),
+          body: JSON.stringify({
+            questionIndex: currentQuestionIndex,
+            answerText,
+            inputMode,
+            audio,
+          }),
         });
 
         const data = await res.json();
@@ -99,6 +109,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
 
         setActiveEvaluation(data.answer.evaluation as AnswerEvaluation);
         setActiveInputMode(data.answer.inputMode || inputMode);
+        setActiveDelivery((data.answer.deliveryMetrics as DeliveryMetrics | null) ?? null);
       } catch {
         setError("An error occurred while evaluating your answer.");
       } finally {
@@ -111,6 +122,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   const handleNextQuestion = useCallback(async () => {
     stopSpeaking();
     setActiveEvaluation(null);
+    setActiveDelivery(null);
 
     const questionCount = session?.questions.length ?? 0;
     if (currentQuestionIndex < questionCount - 1) {
@@ -206,13 +218,15 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
       )}
 
       {activeEvaluation ? (
-        <div className="mx-auto max-w-3xl w-full overflow-y-auto max-h-full py-2">
+        <div className="mx-auto max-w-3xl w-full overflow-y-auto max-h-full py-2 space-y-4">
           <FeedbackCard
             evaluation={activeEvaluation}
             onNextQuestion={handleNextQuestion}
             isLastQuestion={currentQuestionIndex === session.questions.length - 1}
             inputMode={activeInputMode}
           />
+          {/* Absent entirely for typed answers — there is no audio to describe */}
+          {activeDelivery && <DeliveryCard metrics={activeDelivery} />}
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch lg:h-full lg:max-h-full">

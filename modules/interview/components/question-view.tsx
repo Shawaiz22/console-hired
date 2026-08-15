@@ -26,12 +26,17 @@ import {
 } from "../schemas/interview.schema";
 import { useAudioPlayer } from "../hooks/use-audio-player";
 import { useSpeech } from "../utils/use-speech";
+import { useAudioRecorder, type CapturedAudio } from "../utils/use-audio-recorder";
 
 interface QuestionViewProps {
   question: InterviewQuestion;
   questionIndex: number;
   totalQuestions: number;
-  onSubmitAnswer: (answerText: string, inputMode?: "text" | "voice") => Promise<void>;
+  onSubmitAnswer: (
+    answerText: string,
+    inputMode?: "text" | "voice",
+    audio?: CapturedAudio
+  ) => Promise<void>;
   isSubmitting: boolean;
 }
 
@@ -72,6 +77,14 @@ export function QuestionView({
     { lang: "en-IN", continuous: true, interimResults: true }
   );
 
+  // Same take as the transcript above: Web Speech owns its own mic handle, so the
+  // recorder opens a second one. The browser prompts once per origin, not once per hook.
+  const recorder = useAudioRecorder();
+  const capturedAudioRef = useRef<CapturedAudio | null>(null);
+  // The transcript as it stood when recording stopped; typed edits after that would
+  // make words-per-minute describe text the recording does not contain.
+  const capturedTranscriptRef = useRef<string | null>(null);
+
   const lastPlayedQuestionIdRef = useRef<string | null>(null);
 
   // Auto-play question audio when a new question arrives (if not muted)
@@ -84,9 +97,21 @@ export function QuestionView({
     }
   }, [question?.id, question?.question, isMuted, playText]);
 
-  const handleMicToggle = () => {
+  const handleMicToggle = async () => {
     stopAudio();
+
+    if (listening) {
+      stopMic();
+      capturedAudioRef.current = await recorder.stop();
+      capturedTranscriptRef.current = form.getValues("answerText");
+      return;
+    }
+
+    // A fresh take replaces the last one, so the audio and transcript stay in step
+    capturedAudioRef.current = null;
+    capturedTranscriptRef.current = null;
     toggleMic();
+    await recorder.start();
   };
 
   const answerText = useWatch({
@@ -100,9 +125,21 @@ export function QuestionView({
   async function onSubmit(values: AnswerFormValues) {
     if (listening) {
       stopMic();
+      capturedAudioRef.current = await recorder.stop();
+      capturedTranscriptRef.current = values.answerText;
     }
     stopAudio();
-    await onSubmitAnswer(values.answerText, inputMode);
+
+    // Send audio only when it matches what is being submitted; delivery scored against
+    // a transcript the candidate has since rewritten would be a number about nothing
+    const audio =
+      inputMode === "voice" &&
+      capturedAudioRef.current &&
+      capturedTranscriptRef.current?.trim() === values.answerText.trim()
+        ? capturedAudioRef.current
+        : undefined;
+
+    await onSubmitAnswer(values.answerText, inputMode, audio);
   }
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -205,7 +242,8 @@ export function QuestionView({
       </div>
 
       <div className="relative z-20 w-full max-w-xl mx-auto space-y-1.5 pt-0.5">
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-1.5">
+        {/* Bound in the handler, not during render: onSubmit reads the capture refs */}
+        <form onSubmit={(e) => form.handleSubmit(onSubmit)(e)} className="space-y-1.5">
           <div
             className={cn(
               "flex items-end justify-between gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/90 p-2 px-3 sm:px-4 shadow-2xl transition-all duration-300",
@@ -256,7 +294,7 @@ export function QuestionView({
                   type="button"
                   variant={listening ? "destructive" : "ghost"}
                   size="icon"
-                  onClick={handleMicToggle}
+                  onClick={() => void handleMicToggle()}
                   disabled={isSubmitting}
                   className={cn(
                     "size-9 rounded-full transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800",
@@ -290,7 +328,10 @@ export function QuestionView({
           {listening && (
             <div className="flex items-center justify-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 animate-fade-in max-w-md mx-auto">
               <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
-              <span>Voice Dictation Active... Speak your response clearly into your mic.</span>
+              <span>
+                Voice Dictation Active... Speak your response clearly into your mic.
+                {recorder.recording && " Audio is being recorded for delivery analysis."}
+              </span>
             </div>
           )}
         </form>

@@ -12,8 +12,13 @@ import {
   type InterviewQuestion,
 } from "@/modules/interview/schemas/interview.schema";
 import { rubricPrompt } from "@/modules/interview/utils/prompts";
+import { analyzeDelivery } from "@/modules/interview/utils/analyze-delivery";
+import { computeMetrics } from "@/modules/interview/utils/delivery-metrics";
+import type { DeliveryMetrics } from "@/modules/interview/schemas/interview.schema";
 
 export const runtime = "nodejs";
+// Audio analysis adds a second, slower model call on top of content grading
+export const maxDuration = 60;
 
 type Params = Promise<{ id: string }>;
 
@@ -50,7 +55,7 @@ export async function POST(req: Request, { params }: { params: Params }) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const { questionIndex, answerText, inputMode } = parsed.data;
+  const { questionIndex, answerText, inputMode, audio } = parsed.data;
 
   const targetQuestion = (session.questions as InterviewQuestion[] | null)?.[questionIndex];
   if (!targetQuestion) {
@@ -78,6 +83,22 @@ export async function POST(req: Request, { params }: { params: Params }) {
     );
   }
 
+  // Delivery analysis is supplementary and must never fail the submission: the answer
+  // still saves and the content feedback still renders without it. The deterministic
+  // metrics survive even when the model call does not, so `analysis: null` means the
+  // section is omitted and said to be omitted — not invented.
+  let deliveryMetrics: DeliveryMetrics | null = null;
+  if (audio) {
+    const metrics = computeMetrics(answerText, audio.durationMs);
+    let analysis = null;
+    try {
+      analysis = await analyzeDelivery(audio.base64, targetQuestion.question);
+    } catch (audioErr) {
+      console.error("[delivery-analysis]", audioErr); // swallowed deliberately
+    }
+    deliveryMetrics = { ...metrics, analysis };
+  }
+
   try {
     await db.insert(interviewAnswers).values({
       sessionId,
@@ -85,6 +106,7 @@ export async function POST(req: Request, { params }: { params: Params }) {
       answerText,
       inputMode: inputMode || "text",
       evaluation,
+      deliveryMetrics,
     });
   } catch (dbErr) {
     console.error("[post-answer] DB insert error:", dbErr);
@@ -97,6 +119,7 @@ export async function POST(req: Request, { params }: { params: Params }) {
       answerText,
       inputMode: inputMode || "text",
       evaluation,
+      deliveryMetrics,
     },
   });
 }

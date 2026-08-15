@@ -38,7 +38,32 @@ export const StartInterviewSchema = z.object({
   jobDescriptionId: z.string().uuid("Please select a valid job description"),
 });
 
+/** How the candidate sounded. Scored from the audio, never from the transcript. */
+export const DeliveryAnalysisSchema = z.object({
+  pace: z.number().min(1).max(5),
+  vocalVariation: z.number().min(1).max(5),
+  fluency: z.number().min(1).max(5),
+  articulation: z.number().min(1).max(5),
+  observations: z.array(z.string()).max(3),
+});
+
+/**
+ * The numbers are computed in code; `analysis` is the only model-derived part and
+ * is null whenever the audio call failed, so the card can degrade instead of faking it.
+ */
+export const DeliveryMetricsSchema = z.object({
+  wordsPerMinute: z.number(),
+  wordCount: z.number(),
+  durationSeconds: z.number(),
+  fillerCount: z.number(),
+  fillerRate: z.number(),
+  analysis: DeliveryAnalysisSchema.nullable(),
+});
+
 export const MIN_ANSWER_LENGTH = 50;
+
+/** 3 minutes of webm at ~64kbps, base64-encoded, stays well under the 4.5MB request cap. */
+export const MAX_AUDIO_BASE64_LENGTH = 4_000_000;
 
 /** Shared by the answer form and POST /api/v1/interviews/[id]/answers. */
 export const AnswerInputSchema = z.object({
@@ -51,6 +76,12 @@ export const AnswerInputSchema = z.object({
       `Answer must be at least ${MIN_ANSWER_LENGTH} characters for AI evaluation`
     ),
   inputMode: z.enum(["text", "voice"]).default("text"),
+  audio: z
+    .object({
+      base64: z.string().min(1).max(MAX_AUDIO_BASE64_LENGTH),
+      durationMs: z.number().int().positive(),
+    })
+    .optional(),
 });
 
 /** The form only owns the answer text; questionIndex comes from session state. */
@@ -63,3 +94,5 @@ export type SessionSummary = z.infer<typeof SessionSummarySchema>;
 export type StartInterviewValues = z.infer<typeof StartInterviewSchema>;
 export type AnswerInput = z.infer<typeof AnswerInputSchema>;
 export type AnswerFormValues = z.infer<typeof AnswerFormSchema>;
+export type DeliveryAnalysis = z.infer<typeof DeliveryAnalysisSchema>;
+export type DeliveryMetrics = z.infer<typeof DeliveryMetricsSchema>;

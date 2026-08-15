@@ -39,3 +39,29 @@ Special Instructions:
 - "strengths": Array containing 2 specific strengths.
 - "improvements": Array containing 1-2 constructive improvements. NEVER omit the "improvements" key.`;
 }
+
+/**
+ * Paired with the raw audio, not the transcript. The anchors keep scores comparable
+ * between calls; the exclusions keep the claims to what is actually audible.
+ */
+export function deliveryPrompt(question: string): string {
+  return `This is a candidate answering the interview question: "${question}"
+
+Assess DELIVERY ONLY. The content of the answer is graded separately — ignore whether
+the answer is correct or complete.
+
+Rate 1-5 on each:
+- pace: 1 = far too slow or far too fast to follow. 3 = mostly steady with some
+  rushing or dragging. 5 = comfortable, easy to follow throughout.
+- vocalVariation: 1 = flat monotone. 3 = some variation. 5 = natural emphasis and
+  range that holds attention.
+- fluency: 1 = frequent long pauses, restarts, trailing off. 3 = occasional
+  hesitation. 5 = smooth and continuous.
+- articulation: 1 = frequently unclear or mumbled. 3 = mostly clear. 5 = crisp
+  and easy to understand throughout.
+
+Then give up to 3 short, specific, constructive observations about how they spoke.
+
+Important: describe only what is audible. Do not infer the speaker's emotional state,
+confidence level, or personality. Do not comment on accent.`;
+}
