@@ -3,11 +3,20 @@
 import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
-import { ChevronDown, ChevronUp, HelpCircle, Mic, MicOff, Volume2, VolumeX } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  HelpCircle,
+  Mic,
+  MicOff,
+  Send,
+  Sparkles,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Field, FieldError } from "@/components/ui/field";
+import { AiAvatar } from "./ai-avatar";
 import { cn } from "@/lib/utils";
 import {
   AnswerFormSchema,
@@ -76,7 +85,7 @@ export function QuestionView({
   }, [question?.id, question?.question, isMuted, playText]);
 
   const handleMicToggle = () => {
-    stopAudio(); // Silence any audio playback before user speaks into the mic
+    stopAudio();
     toggleMic();
   };
 
@@ -97,180 +106,177 @@ export function QuestionView({
   }
 
   return (
-    <Card className="mx-auto max-w-2xl">
-      <CardContent className="space-y-6 p-6">
-        {/* Progress Bar Header */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold">
-            <span className="text-muted-foreground">
-              Question {questionIndex + 1} of {totalQuestions}
-            </span>
-            <div className="flex items-center gap-2">
-              {/* TTS Controls Toolbar */}
-              <div className="flex items-center gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => (isSpeaking ? stopAudio() : playText(question.question, true))}
-                  className="h-6 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
-                  title={isSpeaking ? "Stop AI audio" : "Read question aloud"}
-                >
-                  <Volume2 className={cn("size-3.5", isSpeaking && "text-primary animate-pulse")} />
-                  <span className="hidden sm:inline">
-                    {isSpeaking ? "Reading..." : "Read Aloud"}
-                  </span>
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={toggleMute}
-                  className="h-6 px-1.5 text-muted-foreground hover:text-foreground"
-                  title={isMuted ? "Unmute question audio" : "Mute question audio"}
-                >
-                  {isMuted ? (
-                    <VolumeX className="size-3.5 text-destructive" />
-                  ) : (
-                    <Volume2 className="size-3.5 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-
-              <Badge
-                variant="outline"
-                className={cn(
-                  "capitalize font-mono text-[11px]",
-                  isTechnical
-                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"
-                    : "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400"
-                )}
-              >
-                {question.type} • {question.targetSkill}
-              </Badge>
-            </div>
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-primary transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+    <div className="relative h-full max-h-full w-full rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/80 text-slate-900 dark:text-slate-100 shadow-xl overflow-hidden flex flex-col justify-between p-3 sm:p-4 transition-colors">
+      {/* TOP HEADER BAR */}
+      <div className="relative z-20 flex items-center justify-between gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 p-2.5 px-4 rounded-2xl shadow-xs">
+        <div className="flex items-center gap-3">
+          <span className="flex size-2.5 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+            Live AI Interview Studio
+          </span>
+          <span className="text-slate-300 dark:text-slate-700">•</span>
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            Question {questionIndex + 1} of {totalQuestions}
+          </span>
         </div>
 
-        {/* Question Text */}
-        <div className="space-y-3">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="text-xl font-bold leading-snug tracking-tight flex-1">
-              {question.question}
-            </h2>
-          </div>
-
-          {/* Collapsible Why Asked */}
-          <div className="rounded-lg border border-border bg-muted/40 overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowWhyAsked(!showWhyAsked)}
-              className="flex w-full items-center justify-between p-3 text-xs font-medium text-muted-foreground hover:text-foreground"
-            >
-              <div className="flex items-center gap-1.5">
-                <HelpCircle className="size-4 text-primary" />
-                <span>Why this question?</span>
-              </div>
-              {showWhyAsked ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
-            </button>
-
-            {showWhyAsked && (
-              <div className="border-t border-border p-3 text-xs text-muted-foreground bg-card">
-                {question.whyAsked}
-              </div>
+        <div className="flex items-center gap-3">
+          <Badge
+            variant="outline"
+            className={cn(
+              "capitalize font-mono text-[11px] py-0.5 px-2.5",
+              isTechnical
+                ? "border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                : "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400"
             )}
-          </div>
-        </div>
-
-        {/* Response Form */}
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
-          <Field className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <label htmlFor="answerText" className="text-xs font-semibold text-foreground">
-                  Your Answer
-                </label>
-                {inputMode === "voice" && (
-                  <Badge variant="secondary" className="text-[10px] font-medium py-0 px-1.5">
-                    Voice Dictated
-                  </Badge>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3">
-                {/* Voice Input Action Button (Hidden when Web Speech is unsupported) */}
-                {supported && (
-                  <Button
-                    type="button"
-                    variant={listening ? "destructive" : "outline"}
-                    size="sm"
-                    onClick={handleMicToggle}
-                    disabled={isSubmitting}
-                    className={cn(
-                      "h-7 gap-1.5 px-2.5 text-xs transition-all",
-                      listening && "animate-pulse ring-2 ring-destructive/40"
-                    )}
-                  >
-                    {listening ? (
-                      <>
-                        <span className="size-2 rounded-full bg-white animate-ping" />
-                        <MicOff className="size-3.5" />
-                        <span>Stop Voice</span>
-                      </>
-                    ) : (
-                      <>
-                        <Mic className="size-3.5 text-primary" />
-                        <span>Voice Input</span>
-                      </>
-                    )}
-                  </Button>
-                )}
-                <span className="text-xs text-muted-foreground">
-                  {charCount} / {MIN_ANSWER_LENGTH} min chars
-                </span>
-              </div>
-            </div>
-
-            {/* Active Listening Status Banner */}
-            {listening && (
-              <div className="flex items-center gap-2 rounded-md bg-destructive/10 border border-destructive/20 px-3 py-1.5 text-xs font-medium text-destructive">
-                <span className="size-2 rounded-full bg-destructive animate-pulse" />
-                <span>Listening actively... Speak your response clearly.</span>
-              </div>
-            )}
-
-            <textarea
-              id="answerText"
-              rows={6}
-              {...form.register("answerText")}
-              placeholder="Type or speak your response here. Include specific details, metrics, and technologies..."
-              disabled={isSubmitting}
-              aria-invalid={Boolean(form.formState.errors.answerText)}
-              className={cn(
-                "flex min-h-35 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
-                listening && "border-destructive/50 ring-1 ring-destructive/30"
-              )}
-            />
-            {form.formState.errors.answerText && (
-              <FieldError>{form.formState.errors.answerText.message}</FieldError>
-            )}
-          </Field>
-
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isSubmitting || charCount < MIN_ANSWER_LENGTH}
           >
-            {isSubmitting ? "Evaluating Answer..." : "Submit Answer & View Feedback"}
+            {question.type} • {question.targetSkill}
+          </Badge>
+
+          <div className="hidden sm:flex items-center gap-2 w-28">
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+              <div
+                className="h-full bg-blue-600 transition-all duration-300"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-[10px] font-mono text-slate-500">{progressPercent}%</span>
+          </div>
+
+          {/* Audio Mute / Unmute Toggle Button */}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={toggleMute}
+            className="size-8 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-white transition-transform hover:scale-105"
+            title={isMuted ? "Unmute AI Interviewer Audio" : "Mute AI Interviewer Audio"}
+          >
+            {isMuted ? (
+              <VolumeX className="size-4 text-red-500 animate-pulse" />
+            ) : (
+              <Volume2 className="size-4 text-blue-600 dark:text-blue-400" />
+            )}
           </Button>
+        </div>
+      </div>
+
+      {/* MAIN SINGLE-PAGE STAGE STAGE */}
+      <div className="relative z-10 my-auto flex flex-col items-center justify-center w-full max-w-xl mx-auto py-1">
+        {/* ChatGPT Voice 3D Morphing Orb AI Agent */}
+        <AiAvatar
+          isSpeaking={isSpeaking}
+          isListening={listening}
+          isThinking={isSubmitting}
+          questionText={question.question}
+          questionIndex={questionIndex}
+          totalQuestions={totalQuestions}
+          isMuted={isMuted}
+          onToggleMute={toggleMute}
+          onReplayAudio={() => playText(question.question, true)}
+        />
+
+        {/* Why Asked Drawer */}
+        <div className="w-full max-w-lg mt-2">
+          <button
+            type="button"
+            onClick={() => setShowWhyAsked(!showWhyAsked)}
+            className="flex items-center justify-center gap-1.5 mx-auto text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors py-0.5"
+          >
+            <HelpCircle className="size-3 text-blue-500" />
+            <span>Why is the interviewer asking this?</span>
+            {showWhyAsked ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
+          </button>
+
+          {showWhyAsked && (
+            <div className="mt-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-2 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 shadow-xs text-center max-h-20 overflow-y-auto">
+              {question.whyAsked}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* BOTTOM CHATGPT VOICE FLOATING CONTROL BAR WITH AUTO-EXPANDING TEXT AREA */}
+      <div className="relative z-20 w-full max-w-xl mx-auto space-y-1.5 pt-0.5">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-1.5">
+          <div
+            className={cn(
+              "flex items-end justify-between gap-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/90 dark:border-slate-800/90 p-2 px-3 sm:px-4 shadow-2xl transition-all duration-300",
+              charCount > 60 ? "rounded-2xl" : "rounded-full"
+            )}
+          >
+            {/* Auto-Expanding Response Textarea */}
+            <div className="flex-1 min-w-0 flex items-center">
+              <textarea
+                rows={1}
+                {...form.register("answerText")}
+                onInput={(e) => {
+                  const target = e.currentTarget;
+                  target.style.height = "auto";
+                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                }}
+                placeholder={
+                  listening ? "Listening to your voice..." : "Type or speak your answer..."
+                }
+                disabled={isSubmitting}
+                className="w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none border-none px-1 py-1 resize-none min-h-[36px] max-h-28 overflow-y-auto leading-relaxed transition-all duration-150"
+              />
+            </div>
+
+            {/* Right Action Controls: Voice Mic & Submit Button */}
+            <div className="flex items-center gap-2 shrink-0 pb-0.5">
+              {/* Character Counter Indicator when typing long text */}
+              {charCount > 0 && (
+                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                  {charCount} chars
+                </span>
+              )}
+
+              {/* Mic Dictation Toggle Button */}
+              {supported && (
+                <Button
+                  type="button"
+                  variant={listening ? "destructive" : "ghost"}
+                  size="icon"
+                  onClick={handleMicToggle}
+                  disabled={isSubmitting}
+                  className={cn(
+                    "size-9 rounded-full transition-all text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800",
+                    listening &&
+                      "bg-red-600 hover:bg-red-700 text-white animate-pulse ring-4 ring-red-500/30"
+                  )}
+                  title={listening ? "Stop Voice Dictation" : "Start Voice Dictation"}
+                >
+                  {listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
+                </Button>
+              )}
+
+              {/* Submit Answer Circle Button */}
+              <Button
+                type="submit"
+                disabled={isSubmitting || charCount < MIN_ANSWER_LENGTH}
+                size="icon"
+                className="size-9 rounded-full bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 disabled:opacity-40 transition-all shadow-md"
+                title="Submit Answer"
+              >
+                {isSubmitting ? (
+                  <Sparkles className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Active Listening Indicator Sub-Banner */}
+          {listening && (
+            <div className="flex items-center justify-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 animate-fade-in max-w-md mx-auto">
+              <span className="size-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>Voice Dictation Active... Speak your response clearly into your mic.</span>
+            </div>
+          )}
         </form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

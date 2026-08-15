@@ -8,10 +8,15 @@ import { cn } from "@/lib/utils";
 
 interface VideoAnalysisProps {
   enabled?: boolean;
+  compact?: boolean;
   className?: string;
 }
 
-export function VideoAnalysis({ enabled = true, className }: VideoAnalysisProps) {
+export function VideoAnalysis({
+  enabled = true,
+  compact: _compact = false,
+  className,
+}: VideoAnalysisProps) {
   const { videoRef, cameraActive, permissionError, analysis, startCamera } =
     useVideoAnalysis(enabled);
 
