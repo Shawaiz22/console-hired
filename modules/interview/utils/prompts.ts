@@ -30,11 +30,12 @@ Rubric Anchors (rate each dimension from 1 to 5):
    5: Names concrete metrics, code libraries, metrics, architectural trade-offs.
 
 Special Instructions:
+- You MUST output a complete JSON object containing ALL 7 keys: "clarity", "relevance", "completeness", "specificity", "star", "strengths", and "improvements".
 - ${
     question.type === "behavioral"
       ? "This is a behavioral question. Perform STAR framework extraction. Fill star object with situation, task, action, result strings."
-      : "This is a technical question. Set star to null."
+      : "This is a technical question. Set star explicitly to null."
   }
-- Provide 2 specific strengths.
-- Provide 1-2 constructive improvements.`;
+- "strengths": Array containing 2 specific strengths.
+- "improvements": Array containing 1-2 constructive improvements. NEVER omit the "improvements" key.`;
 }
