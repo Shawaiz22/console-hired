@@ -198,7 +198,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
   }
 
   return (
-    <div className="mx-auto max-w-7xl w-full h-[calc(100vh-7.5rem)] max-h-[calc(100vh-7.5rem)] overflow-hidden p-1 sm:p-2">
+    <div className="mx-auto max-w-7xl w-full min-h-[calc(100vh-7.5rem)] lg:h-[calc(100vh-7.5rem)] overflow-y-auto lg:overflow-hidden p-1 sm:p-2">
       {error && (
         <div className="rounded-md bg-destructive/15 p-2 text-xs text-destructive shrink-0 mb-2">
           {error}
@@ -215,9 +215,8 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch h-full max-h-full overflow-hidden">
-          {/* LEFT: ChatGPT Voice Stage (7 cols) */}
-          <div className="lg:col-span-7 h-full max-h-full overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch lg:h-full lg:max-h-full">
+          <div className="lg:col-span-7 min-h-[480px] lg:h-full lg:max-h-full flex flex-col overflow-hidden">
             <QuestionView
               key={currentQuestion.id}
               question={currentQuestion}
@@ -228,8 +227,7 @@ export function InterviewSessionView({ id }: InterviewSessionViewProps) {
             />
           </div>
 
-          {/* RIGHT: Separate Expanded Candidate Webcam Panel (5 cols) */}
-          <div className="lg:col-span-5 h-full max-h-full overflow-hidden flex flex-col justify-center">
+          <div className="lg:col-span-5 lg:h-full lg:max-h-full flex flex-col justify-center">
             <div className="w-full h-full max-h-full rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 p-3 shadow-xl backdrop-blur-xl flex flex-col justify-center overflow-hidden">
               <VideoAnalysis compact={false} />
             </div>

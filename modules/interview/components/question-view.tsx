@@ -105,9 +105,19 @@ export function QuestionView({
     await onSubmitAnswer(values.answerText, inputMode);
   }
 
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const { ref: formTextareaRef, ...formTextareaProps } = form.register("answerText");
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+    }
+  }, [answerText]);
+
   return (
     <div className="relative h-full max-h-full w-full rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/80 text-slate-900 dark:text-slate-100 shadow-xl overflow-hidden flex flex-col justify-between p-3 sm:p-4 transition-colors">
-      {/* TOP HEADER BAR */}
       <div className="relative z-20 flex items-center justify-between gap-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800 p-2.5 px-4 rounded-2xl shadow-xs">
         <div className="flex items-center gap-3">
           <span className="flex size-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -143,7 +153,6 @@ export function QuestionView({
             <span className="text-[10px] font-mono text-slate-500">{progressPercent}%</span>
           </div>
 
-          {/* Audio Mute / Unmute Toggle Button */}
           <Button
             type="button"
             variant="ghost"
@@ -151,6 +160,7 @@ export function QuestionView({
             onClick={toggleMute}
             className="size-8 rounded-full text-slate-500 hover:text-slate-900 dark:hover:text-white transition-transform hover:scale-105"
             title={isMuted ? "Unmute AI Interviewer Audio" : "Mute AI Interviewer Audio"}
+            aria-label={isMuted ? "Unmute AI Interviewer Audio" : "Mute AI Interviewer Audio"}
           >
             {isMuted ? (
               <VolumeX className="size-4 text-red-500 animate-pulse" />
@@ -161,9 +171,7 @@ export function QuestionView({
         </div>
       </div>
 
-      {/* MAIN SINGLE-PAGE STAGE STAGE */}
       <div className="relative z-10 my-auto flex flex-col items-center justify-center w-full max-w-xl mx-auto py-1">
-        {/* ChatGPT Voice 3D Morphing Orb AI Agent */}
         <AiAvatar
           isSpeaking={isSpeaking}
           isListening={listening}
@@ -176,12 +184,12 @@ export function QuestionView({
           onReplayAudio={() => playText(question.question, true)}
         />
 
-        {/* Why Asked Drawer */}
         <div className="w-full max-w-lg mt-2">
           <button
             type="button"
             onClick={() => setShowWhyAsked(!showWhyAsked)}
             className="flex items-center justify-center gap-1.5 mx-auto text-[11px] text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 transition-colors py-0.5"
+            aria-expanded={showWhyAsked}
           >
             <HelpCircle className="size-3 text-blue-500" />
             <span>Why is the interviewer asking this?</span>
@@ -196,7 +204,6 @@ export function QuestionView({
         </div>
       </div>
 
-      {/* BOTTOM CHATGPT VOICE FLOATING CONTROL BAR WITH AUTO-EXPANDING TEXT AREA */}
       <div className="relative z-20 w-full max-w-xl mx-auto space-y-1.5 pt-0.5">
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-1.5">
           <div
@@ -205,34 +212,45 @@ export function QuestionView({
               charCount > 60 ? "rounded-2xl" : "rounded-full"
             )}
           >
-            {/* Auto-Expanding Response Textarea */}
             <div className="flex-1 min-w-0 flex items-center">
               <textarea
                 rows={1}
-                {...form.register("answerText")}
-                onInput={(e) => {
-                  const target = e.currentTarget;
-                  target.style.height = "auto";
-                  target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
+                {...formTextareaProps}
+                ref={(e) => {
+                  formTextareaRef(e);
+                  textareaRef.current = e;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!isSubmitting && charCount >= MIN_ANSWER_LENGTH) {
+                      form.handleSubmit(onSubmit)();
+                    }
+                  }
                 }}
                 placeholder={
                   listening ? "Listening to your voice..." : "Type or speak your answer..."
                 }
                 disabled={isSubmitting}
+                aria-label="Interview response answer"
                 className="w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none border-none px-1 py-1 resize-none min-h-[36px] max-h-28 overflow-y-auto leading-relaxed transition-all duration-150"
               />
             </div>
 
-            {/* Right Action Controls: Voice Mic & Submit Button */}
             <div className="flex items-center gap-2 shrink-0 pb-0.5">
-              {/* Character Counter Indicator when typing long text */}
               {charCount > 0 && (
-                <span className="text-[10px] font-mono text-slate-400 dark:text-slate-500">
-                  {charCount} chars
+                <span
+                  className={cn(
+                    "text-[10px] font-mono",
+                    charCount < MIN_ANSWER_LENGTH
+                      ? "text-amber-500/90 dark:text-amber-400/90"
+                      : "text-emerald-600 dark:text-emerald-400"
+                  )}
+                >
+                  {charCount}/{MIN_ANSWER_LENGTH} chars
                 </span>
               )}
 
-              {/* Mic Dictation Toggle Button */}
               {supported && (
                 <Button
                   type="button"
@@ -246,18 +264,19 @@ export function QuestionView({
                       "bg-red-600 hover:bg-red-700 text-white animate-pulse ring-4 ring-red-500/30"
                   )}
                   title={listening ? "Stop Voice Dictation" : "Start Voice Dictation"}
+                  aria-label={listening ? "Stop Voice Dictation" : "Start Voice Dictation"}
                 >
                   {listening ? <MicOff className="size-4" /> : <Mic className="size-4" />}
                 </Button>
               )}
 
-              {/* Submit Answer Circle Button */}
               <Button
                 type="submit"
                 disabled={isSubmitting || charCount < MIN_ANSWER_LENGTH}
                 size="icon"
                 className="size-9 rounded-full bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-200 text-white dark:text-slate-900 disabled:opacity-40 transition-all shadow-md"
                 title="Submit Answer"
+                aria-label="Submit Answer"
               >
                 {isSubmitting ? (
                   <Sparkles className="size-4 animate-spin" />
@@ -268,7 +287,6 @@ export function QuestionView({
             </div>
           </div>
 
-          {/* Active Listening Indicator Sub-Banner */}
           {listening && (
             <div className="flex items-center justify-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-600 dark:text-emerald-400 animate-fade-in max-w-md mx-auto">
               <span className="size-2 rounded-full bg-emerald-500 animate-ping" />

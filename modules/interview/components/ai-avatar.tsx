@@ -32,7 +32,6 @@ export function AiAvatar({
   onReplayAudio,
   className,
 }: AiAvatarProps) {
-  // Determine effective state
   const currentState: AvatarState =
     avatarState ||
     (isThinking ? "thinking" : isSpeaking ? "speaking" : isListening ? "listening" : "idle");
@@ -44,9 +43,7 @@ export function AiAvatar({
         className
       )}
     >
-      {/* ChatGPT Voice / Gemini Live Fluid Morphing Orb Stage */}
       <div className="relative flex items-center justify-center my-1">
-        {/* Ambient Pulsing Glow Backdrop */}
         <div
           className={cn(
             "absolute size-36 sm:size-48 rounded-full transition-all duration-700 blur-2xl opacity-40 pointer-events-none",
@@ -60,7 +57,6 @@ export function AiAvatar({
           )}
         />
 
-        {/* Outer Audio Equalizer Ring */}
         {(currentState === "speaking" || currentState === "listening") && (
           <div
             className={cn(
@@ -71,7 +67,6 @@ export function AiAvatar({
           />
         )}
 
-        {/* 3D Morphing Fluid Gradient Orb */}
         <div
           className={cn(
             "relative z-10 size-28 sm:size-36 shadow-lg transition-all duration-500 flex items-center justify-center overflow-hidden",
@@ -92,10 +87,8 @@ export function AiAvatar({
             animation: "morphOrb 8s ease-in-out infinite alternate",
           }}
         >
-          {/* Internal Fluid Shimmer Overlay */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-black/20 mix-blend-overlay pointer-events-none" />
 
-          {/* Minimal State Icon Badge Inside Orb */}
           <div className="relative z-20 flex flex-col items-center justify-center text-white drop-shadow-md">
             {currentState === "speaking" && <Volume2 className="size-6 animate-pulse text-white" />}
             {currentState === "listening" && <Mic className="size-6 animate-pulse text-white" />}
@@ -105,7 +98,6 @@ export function AiAvatar({
         </div>
       </div>
 
-      {/* State Status Badge */}
       <div className="z-10">
         <Badge
           variant="outline"
@@ -127,7 +119,6 @@ export function AiAvatar({
         </Badge>
       </div>
 
-      {/* Question Speech Card */}
       <div className="w-full max-w-lg px-1 z-10">
         <div className="rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 p-3 shadow-sm backdrop-blur-xl space-y-1.5">
           <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pb-1.5">
@@ -139,7 +130,6 @@ export function AiAvatar({
               </span>
             </div>
 
-            {/* Quick Controls */}
             <div className="flex items-center gap-1">
               {onReplayAudio && (
                 <Button
@@ -149,6 +139,7 @@ export function AiAvatar({
                   onClick={onReplayAudio}
                   className="h-5 px-1.5 text-[10px] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-1 rounded-full"
                   title="Replay question audio"
+                  aria-label="Replay question audio"
                 >
                   <Volume2 className="size-3 text-blue-500" />
                   <span>Replay</span>
@@ -163,6 +154,7 @@ export function AiAvatar({
                   onClick={onToggleMute}
                   className="h-5 px-1.5 text-[10px] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 gap-1 rounded-full"
                   title={isMuted ? "Unmute AI Interviewer" : "Mute AI Interviewer"}
+                  aria-label={isMuted ? "Unmute AI Interviewer" : "Mute AI Interviewer"}
                 >
                   {isMuted ? (
                     <VolumeX className="size-3 text-destructive" />
@@ -180,28 +172,6 @@ export function AiAvatar({
           </h2>
         </div>
       </div>
-
-      {/* Inline Keyframes for Orb Morphing */}
-      <style jsx global>{`
-        @keyframes morphOrb {
-          0% {
-            border-radius: 45% 55% 65% 35% / 40% 50% 60% 50%;
-            transform: rotate(0deg) scale(1);
-          }
-          33% {
-            border-radius: 65% 35% 40% 60% / 55% 45% 55% 45%;
-            transform: rotate(120deg) scale(1.04);
-          }
-          66% {
-            border-radius: 35% 65% 55% 45% / 60% 40% 45% 55%;
-            transform: rotate(240deg) scale(0.98);
-          }
-          100% {
-            border-radius: 45% 55% 65% 35% / 40% 50% 60% 50%;
-            transform: rotate(360deg) scale(1);
-          }
-        }
-      `}</style>
     </div>
   );
 }
