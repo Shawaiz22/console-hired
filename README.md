@@ -80,7 +80,11 @@ and text density — the formatting choices that quietly cause rejection.
 **4. Interview on the evidence.** Six questions (four technical, two behavioural) are generated
 from _this_ resume against _this_ job description, each carrying a `whyAsked` rationale. Candidates can respond via text or continuous voice input (speech-to-text) with built-in voice audio playback (text-to-speech feedback). Answers are graded on clarity, relevance, completeness and specificity, with STAR-structure detection on behavioural answers. Upon completing all questions, candidates experience an interactive multi-stage score calculation loading screen before revealing the full session performance summary.
 
-**5. Live Webcam & Vision AI Analysis.** During mock interviews, an integrated live webcam feed powered by MediaPipe Face Landmarker (`@mediapipe/tasks-vision`) tracks posture, eye contact, and head orientation in real time — providing instant visual feedback, presence scoring, and live posture alignment alerts directly in the browser without storing video recordings.
+**5. Live Webcam & Vision Analysis.** During mock interviews, a live webcam feed powered by
+MediaPipe **PoseLandmarker** (`@mediapipe/tasks-vision`, `pose_landmarker_lite`) tracks seated
+posture, framing and steadiness in real time from nose and shoulder geometry — producing a weighted
+presence score and live alignment alerts. It runs **entirely in the browser on-device**: no video is
+uploaded, recorded or stored, and only derived numbers ever leave the frame loop.
 
 **6. Track progress honestly.** The dashboard charts real scores against the dates they were
 recorded. Where there is no data, the chart shows a gap and the UI says so — nothing is
