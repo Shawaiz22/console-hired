@@ -27,7 +27,8 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
   const [serverError, setServerError] = useState("");
   const [attemptsRemaining, setAttemptsRemaining] = useState<number | null>(null);
   const [isExhausted, setIsExhausted] = useState(false);
-  const [cooldown, setCooldown] = useState(60);
+  const [isEditingEmail, setIsEditingEmail] = useState(!initialEmail);
+  const [cooldown, setCooldown] = useState(initialEmail ? 60 : 0);
   const [resendMessage, setResendMessage] = useState("");
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -106,7 +107,11 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
   }
 
   async function handleResend() {
-    if (cooldown > 0 || !emailValue) return;
+    if (cooldown > 0) return;
+    if (!emailValue) {
+      setServerError("Please enter your email address first.");
+      return;
+    }
     setServerError("");
     setResendMessage("");
 
@@ -128,12 +133,13 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       }
 
       setIsExhausted(false);
+      setIsEditingEmail(false);
       const resetDigits = ["", "", "", "", "", ""];
       setDigits(resetDigits);
       form.setValue("code", "");
       setAttemptsRemaining(null);
       setCooldown(60);
-      const successMsg = "A new verification code has been sent to your email.";
+      const successMsg = `A new verification code has been sent to ${emailValue}.`;
       setResendMessage(successMsg);
       toast.success("New verification code sent!");
     } catch {
@@ -176,7 +182,7 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       }
 
       toast.success("Email verified successfully! You can now log in.");
-      router.push("/login?verified=true");
+      router.push(`/login?verified=true&email=${encodeURIComponent(values.email)}`);
     } catch {
       const errMsg = "Verification request failed. Please try again.";
       setServerError(errMsg);
@@ -189,10 +195,17 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       <div className="text-center">
         <h1 className="text-xl font-semibold tracking-tight">Verify your email</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {emailValue ? (
-            <>
+          {emailValue && !isEditingEmail ? (
+            <span>
               We sent a 6-digit code to <strong className="text-foreground">{emailValue}</strong>
-            </>
+              <button
+                type="button"
+                onClick={() => setIsEditingEmail(true)}
+                className="ml-2 text-xs font-medium text-primary underline underline-offset-4 hover:opacity-80"
+              >
+                Change email
+              </button>
+            </span>
           ) : (
             "Enter your email and the 6-digit code sent to you."
           )}
@@ -200,17 +213,40 @@ export function VerifyForm({ initialEmail }: { initialEmail?: string }) {
       </div>
 
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" noValidate>
-        {!initialEmail && (
+        {isEditingEmail && (
           <Field data-invalid={!!form.formState.errors.email}>
-            <FieldLabel htmlFor="email">Email Address</FieldLabel>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              aria-required="true"
-              aria-invalid={!!form.formState.errors.email}
-              {...form.register("email")}
-            />
+            <div className="flex items-center justify-between">
+              <FieldLabel htmlFor="email">Email Address</FieldLabel>
+              {initialEmail && (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingEmail(false)}
+                  className="text-xs text-muted-foreground hover:underline"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                aria-required="true"
+                aria-invalid={!!form.formState.errors.email}
+                {...form.register("email")}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleResend}
+                disabled={cooldown > 0 || !emailValue}
+                className="shrink-0"
+              >
+                {cooldown > 0 ? `${cooldown}s` : "Send code"}
+              </Button>
+            </div>
             <FieldError errors={[form.formState.errors.email]} />
           </Field>
         )}

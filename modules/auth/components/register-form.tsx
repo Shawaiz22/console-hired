@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Field, FieldError, FieldGroup, FieldLabel, FieldSeparator } from "@/components/ui/field";
 import { registerSchema, type RegisterValues } from "../schemas/register-schema";
 import { GoogleAuthButton } from "./google-auth-button";
+import { toast } from "sonner";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -37,7 +38,19 @@ export function RegisterForm() {
       return;
     }
 
-    // account created — now log them in automatically
+    if (data.requiresVerification) {
+      if (data.emailSent === false) {
+        toast.warning(
+          "Account created, but verification email failed to send. Check server configuration or console for code."
+        );
+      } else {
+        toast.success("Account created! Check your email for the verification code.");
+      }
+      router.push(`/verify?email=${encodeURIComponent(values.email)}`);
+      return;
+    }
+
+    // account created without verification needed (e.g. Google-linked user setting password)
     await signIn("credentials", { ...values, redirect: false });
     router.push("/dashboard");
   }

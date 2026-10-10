@@ -77,6 +77,11 @@ export function UploadForm({ onSuccess }: UploadFormProps) {
       <Button type="submit" className="w-full" disabled={isUploading}>
         {isUploading ? "Uploading & Extracting..." : "Continue to Job Description"}
       </Button>
+
+      <p className="text-center text-xs text-muted-foreground">
+        🔒 <strong>Demo Showcase Notice:</strong> Resumes are processed via AI APIs for practice
+        demonstration. Please do not submit confidential or sensitive personal data.
+      </p>
     </form>
   );
 }

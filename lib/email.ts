@@ -69,6 +69,10 @@ export async function createAndSendOtp(email: string) {
     attempts: 0,
   });
 
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`[DEV OTP] Verification code for ${email}: ${code}`);
+  }
+
   await sendEmail({
     to: email,
     subject: "Your console.hired() Verification Code",
