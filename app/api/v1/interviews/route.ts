@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateObject } from "ai";
-import { and, eq } from "drizzle-orm";
+import { and, count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { extractionModel } from "@/lib/ai";
 import { requireApiUser } from "@/lib/auth-helpers";
@@ -9,6 +9,8 @@ import { interviewSessions, jobDescriptions, resumes } from "@/lib/db/schema";
 import { InterviewQuestionSchema } from "@/modules/interview/schemas/interview.schema";
 
 export const runtime = "nodejs";
+
+const MAX_INTERVIEWS_PER_USER = 3;
 
 const CreateInterviewSchema = z.object({
   resumeId: z.string().uuid(),
@@ -22,6 +24,20 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Demo usage limit per user
+    const [usage] = await db
+      .select({ total: count() })
+      .from(interviewSessions)
+      .where(eq(interviewSessions.userId, user.id));
+
+    if (usage && usage.total >= MAX_INTERVIEWS_PER_USER) {
+      return NextResponse.json(
+        {
+          error: `Demo limit reached (${MAX_INTERVIEWS_PER_USER}/${MAX_INTERVIEWS_PER_USER} mock interviews used). You have reached the free showcase limit for this account.`,
+        },
+        { status: 429 }
+      );
+    }
     const body = await req.json();
     const parsed = CreateInterviewSchema.safeParse(body);
     if (!parsed.success) {
