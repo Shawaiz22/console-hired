@@ -232,16 +232,17 @@ npm run dev            # http://localhost:3000
 Copy [`.env.example`](.env.example) to `.env.local`. No secrets are committed — `.gitignore`
 excludes `.env*`.
 
-| Variable                       | Required | Purpose                                                                |
-| ------------------------------ | :------: | ---------------------------------------------------------------------- |
-| `DATABASE_URL`                 |   yes    | Neon Postgres connection string (pooled)                               |
-| `AUTH_SECRET`                  |   yes    | Signs/encrypts the NextAuth session cookie (`openssl rand -base64 32`) |
-| `GOOGLE_CLIENT_ID`             |   yes    | Google OAuth client ID                                                 |
-| `GOOGLE_CLIENT_SECRET`         |   yes    | Google OAuth client secret                                             |
-| `GOOGLE_GENERATIVE_AI_API_KEY` |   yes    | Gemini — parsing, question generation, summaries                       |
-| `GROQ_API_KEY`                 |   yes    | Groq — interview answer grading                                        |
-| `GMAIL_USER`                   |   yes    | Sender address for OTP verification email                              |
-| `GMAIL_APP_PASSWORD`           |   yes    | Gmail app password (not the account password)                          |
+| Variable                       | Required | Purpose                                                                 |
+| ------------------------------ | :------: | ----------------------------------------------------------------------- |
+| `DATABASE_URL`                 |   yes    | Neon Postgres connection string (pooled)                                |
+| `AUTH_SECRET`                  |   yes    | Signs/encrypts the NextAuth session cookie (`openssl rand -base64 32`)  |
+| `GOOGLE_CLIENT_ID`             |   yes    | Google OAuth client ID                                                  |
+| `GOOGLE_CLIENT_SECRET`         |   yes    | Google OAuth client secret                                              |
+| `GOOGLE_GENERATIVE_AI_API_KEY` |   yes    | Gemini — parsing, question generation, summaries                        |
+| `GROQ_API_KEY`                 |   yes    | Groq — interview answer grading                                         |
+| `GMAIL_USER`                   |   yes    | Sender address for OTP verification email                               |
+| `GMAIL_APP_PASSWORD`           |   yes    | Gmail app password (not the account password)                           |
+| `ELEVENLABS_API_KEY`           |    no    | ElevenLabs text-to-speech for AI interviewer (falls back to Web Speech) |
 
 ## Database Details
 
@@ -318,7 +319,7 @@ after a quiet period is slower while the database wakes.
 - **Shareable feedback reports** — a signed public link a mentor or recruiter can review.
 - **Background job queue** — analysis currently runs as fire-and-forget after a `202`; a real
   queue would add retries and durability.
-- **Rate limiting** — per-user quotas on AI endpoints before this faces real traffic.
+- **Distributed Redis rate limiting** — upgrade the current database-backed per-user demo quota to an edge Redis sliding window.
 
 ## License
 

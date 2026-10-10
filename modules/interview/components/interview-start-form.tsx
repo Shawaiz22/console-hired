@@ -219,6 +219,11 @@ export function InterviewStartForm() {
           >
             {form.formState.isSubmitting ? "Generating Questions..." : "Start Practice Session"}
           </Button>
+
+          <p className="text-center text-xs text-muted-foreground">
+            🎥 <strong>Privacy Notice:</strong> Video &amp; audio metrics are analyzed client-side
+            in your browser. Camera feeds are never uploaded or stored.
+          </p>
         </form>
       </CardContent>
     </Card>

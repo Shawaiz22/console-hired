@@ -53,13 +53,15 @@ export async function POST(req: Request) {
       .values({ name, email, passwordHash })
       .returning({ id: users.id, email: users.email });
 
+    let emailSent = true;
     try {
       await createAndSendOtp(email);
     } catch (otpErr) {
       console.error("[register] Failed to send OTP email:", otpErr);
+      emailSent = false;
     }
 
-    return NextResponse.json({ user, requiresVerification: true }, { status: 201 });
+    return NextResponse.json({ user, requiresVerification: true, emailSent }, { status: 201 });
   } catch (err) {
     console.error("[register]", err);
     return NextResponse.json({ error: "Something went wrong" }, { status: 500 });
